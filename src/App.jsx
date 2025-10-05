@@ -7,6 +7,20 @@ const DungeonYahtzee = () => {
   const [dice, setDice] = useState([1, 2, 3, 4, 5]);
   const [held, setHeld] = useState([false, false, false, false, false]);
   const [rollsLeft, setRollsLeft] = useState(3);
+  const [isRolling, setIsRolling] = useState(false);
+  const [eliteKills, setEliteKills] = useState(0);
+  const [showArtifacts, setShowArtifacts] = useState(false);
+  const [showForge, setShowForge] = useState(false);
+  const [activeForgeTab, setActiveForgeTab] = useState('enhancement');
+  const [diceBuild, setDiceBuild] = useState({
+    level: 0,
+    enhancement: 0,
+    enchantment: 0,
+    evolution: 0
+  });
+  const [collectedDice, setCollectedDice] = useState([0, 0, 0, 0, 0, 0]); // [1,2,3,4,5,6] kostki
+  const [shopDice, setShopDice] = useState(0); // 1 losowa kostka w sklepie
+  const [specialCombo, setSpecialCombo] = useState('');
   const [hp, setHp] = useState(60);
   const [maxHp, setMaxHp] = useState(60);
   const [shield, setShield] = useState(0);
@@ -30,6 +44,8 @@ const DungeonYahtzee = () => {
     frozen: false,
     blessed: 0
   });
+  const [playerName, setPlayerName] = useState('');
+  const [showNameInput, setShowNameInput] = useState(false);
 
   const enemies = [
     { name: 'Goblin Zwiadowca', hp: 18, dmg: 4, reward: 12, xp: 10, icon: '👺', special: null },
@@ -45,14 +61,231 @@ const DungeonYahtzee = () => {
   ];
 
   const artifactsList = [
-    { name: 'Pierścień Mocy', effect: 'dmg', value: 1.2, icon: '💍', desc: '+20% do wszystkich obrażeń' },
-    { name: 'Amulet Życia', effect: 'hp', value: 20, icon: '📿', desc: '+5 HP po każdym zabiciu' },
-    { name: 'Kryształ Many', effect: 'mana', value: 15, icon: '💎', desc: '+15 maksymalnej many' },
-    { name: 'Maska Krytyka', effect: 'crit', value: 0.15, icon: '🎭', desc: '+15% szansy na krytyka' },
-    { name: 'Tarcza Odbicia', effect: 'reflect', value: 0.3, icon: '🛡️', desc: 'Odbija 30% otrzymanych obrażeń' }
+    { 
+      name: 'Pierścień Mocy', 
+      effect: 'dmg', 
+      value: 1.2, 
+      icon: '💍', 
+      desc: '+20% do wszystkich obrażeń',
+      lore: 'Starożytny pierścień pulsujący neonową energią. Wzmacnia każde uderzenie toksyczną mocą.',
+      requirement: 1,
+      unlocked: eliteKills >= 1
+    },
+    { 
+      name: 'Amulet Życia', 
+      effect: 'hp', 
+      value: 20, 
+      icon: '📿', 
+      desc: '+5 HP po każdym zabiciu',
+      lore: 'Cybertechnologiczny amulet absorbujący energię życiową pokonanych wrogów.',
+      requirement: 2,
+      unlocked: eliteKills >= 2
+    },
+    { 
+      name: 'Kryształ Many', 
+      effect: 'mana', 
+      value: 15, 
+      icon: '💎', 
+      desc: '+15 maksymalnej many',
+      lore: 'Pulsujący kryształ zawierający nieskończone zasoby cyfrowej mocy.',
+      requirement: 3,
+      unlocked: eliteKills >= 3
+    },
+    { 
+      name: 'Maska Krytyka', 
+      effect: 'crit', 
+      value: 0.15, 
+      icon: '🎭', 
+      desc: '+15% szansy na krytyka',
+      lore: 'Tajemnicza maska hakera ujawniająca słabe punkty w systemach przeciwnika.',
+      requirement: 4,
+      unlocked: eliteKills >= 4
+    },
+    { 
+      name: 'Tarcza Odbicia', 
+      effect: 'reflect', 
+      value: 0.3, 
+      icon: '🛡️', 
+      desc: 'Odbija 30% otrzymanych obrażeń',
+      lore: 'Holograficzna tarcza odbijająca ataki z neonowym blaskiem.',
+      requirement: 5,
+      unlocked: eliteKills >= 5
+    },
+    { 
+      name: 'Oko Chaosu', 
+      effect: 'xp', 
+      value: 1.5, 
+      icon: '👁️', 
+      desc: '+50% XP z walk',
+      lore: 'Cybernetyczne oko widzące przez wymiary. Odkrywa ukryte ścieżki doświadczenia.',
+      requirement: 7,
+      unlocked: eliteKills >= 7
+    },
+    { 
+      name: 'Kostka Czasu', 
+      effect: 'rolls', 
+      value: 1, 
+      icon: '⏰', 
+      desc: '+1 rzut kostkami',
+      lore: 'Zakrzywiona kostka manipulująca czasem. Daje dodatkowy rzut w każdej walce.',
+      requirement: 10,
+      unlocked: eliteKills >= 10
+    },
+    { 
+      name: 'Neonowy Płaszcz', 
+      effect: 'dodge', 
+      value: 0.2, 
+      icon: '👘', 
+      desc: '+20% szansy na unik',
+      lore: 'Holograficzny płaszcz z technologii stealth. Sprawia, że ataki przechodzą przez ciebie.',
+      requirement: 12,
+      unlocked: eliteKills >= 12
+    },
+    { 
+      name: 'Kryształ Lodu', 
+      effect: 'freeze', 
+      value: 0.25, 
+      icon: '❄️', 
+      desc: '25% szansy na zamrożenie',
+      lore: 'Wieczny lód z wymiaru zimna. Zamraża przeciwników na miejscu.',
+      requirement: 15,
+      unlocked: eliteKills >= 15
+    },
+    { 
+      name: 'Ostrze Wampira', 
+      effect: 'lifesteal', 
+      value: 0.3, 
+      icon: '🗡️', 
+      desc: '30% lifesteal z obrażeń',
+      lore: 'Zaklęte ostrze pijące życie wrogów. Każde uderzenie leczy.',
+      requirement: 18,
+      unlocked: eliteKills >= 18
+    },
+    { 
+      name: 'Płomienie Piekła', 
+      effect: 'burn', 
+      value: 0.4, 
+      icon: '🔥', 
+      desc: '40% szansy na podpalenie',
+      lore: 'Ogień z najgłębszych czeluści. Palące się rany nie goją się łatwo.',
+      requirement: 20,
+      unlocked: eliteKills >= 20
+    },
+    { 
+      name: 'Kryształ Złota', 
+      effect: 'gold', 
+      value: 2.0, 
+      icon: '💰', 
+      desc: '+100% złota z walk',
+      lore: 'Magiczny kryształ przyciągający bogactwo. Złoto lgnie do ciebie.',
+      requirement: 25,
+      unlocked: eliteKills >= 25
+    },
+    { 
+      name: 'Maska Szaleństwa', 
+      effect: 'rage', 
+      value: 0.5, 
+      icon: '😈', 
+      desc: '+50% obrażeń gdy HP < 30%',
+      lore: 'Maska wyzwalająca pierwotną furię. Im bliżej śmierci, tym silniejszy.',
+      requirement: 30,
+      unlocked: eliteKills >= 30
+    },
+    { 
+      name: 'Tarcza Czasu', 
+      effect: 'shield', 
+      value: 50, 
+      icon: '⏳', 
+      desc: '+50 tarczy na start walki',
+      lore: 'Chronometr tworzący barierę czasową. Chroni przed pierwszymi atakami.',
+      requirement: 35,
+      unlocked: eliteKills >= 35
+    },
+    { 
+      name: 'Oko Przepowiedni', 
+      effect: 'foresight', 
+      value: 0.3, 
+      icon: '🔮', 
+      desc: '30% szansy na podwójny rzut',
+      lore: 'Kryształowa kula widząca przyszłość. Pozwala na ponowne rzucenie kostkami.',
+      requirement: 40,
+      unlocked: eliteKills >= 40
+    },
+    { 
+      name: 'Kostka Przeznaczenia', 
+      effect: 'destiny', 
+      value: 0.1, 
+      icon: '🎲', 
+      desc: '10% szansy na natychmiastowe zabicie',
+      lore: 'Kostka decydująca o życiu i śmierci. Czasami los jest po twojej stronie.',
+      requirement: 45,
+      unlocked: eliteKills >= 45
+    },
+    { 
+      name: 'Serce Feniksa', 
+      effect: 'revive', 
+      value: 1, 
+      icon: '❤️', 
+      desc: 'Ożywienie po śmierci (1x na grę)',
+      lore: 'Płonące serce odradzające się z popiołów. Daje drugą szansę.',
+      requirement: 50,
+      unlocked: eliteKills >= 50
+    },
+    { 
+      name: 'Korona Chaosu', 
+      effect: 'chaos', 
+      value: 0.2, 
+      icon: '👑', 
+      desc: '20% szansy na losowy efekt',
+      lore: 'Korona władcy chaosu. Każda walka może przynieść niespodziankę.',
+      requirement: 60,
+      unlocked: eliteKills >= 60
+    },
+    { 
+      name: 'Oko Boga', 
+      effect: 'omniscience', 
+      value: 1, 
+      icon: '👁️‍🗨️', 
+      desc: 'Widzi wszystkie kombinacje',
+      lore: 'Oko widzące wszystkie możliwe wyniki. Pozwala wybrać najlepszą kombinację.',
+      requirement: 75,
+      unlocked: eliteKills >= 75
+    },
+    { 
+      name: 'Kostka Nieskończoności', 
+      effect: 'infinite', 
+      value: 0.05, 
+      icon: '♾️', 
+      desc: '5% szansy na nieskończone rzuty',
+      lore: 'Kostka z wymiaru nieskończoności. Czasami daje nieograniczone możliwości.',
+      requirement: 100,
+      unlocked: eliteKills >= 100
+    }
   ];
 
   useEffect(() => {
+    // Load saved game
+    const savedGame = localStorage.getItem('dungeon-yahtzee-save');
+    if (savedGame) {
+      try {
+        const data = JSON.parse(savedGame);
+        setHp(data.hp);
+        setMaxHp(data.maxHp);
+        setMana(data.mana);
+        setMaxMana(data.maxMana);
+        setShield(data.shield);
+        setFloor(data.floor);
+        setGold(data.gold);
+        setXp(data.xp);
+        setLevel(data.level);
+        setArtifacts(data.artifacts || []);
+        setDice(data.dice || [1, 2, 3, 4, 5]);
+        setRollsLeft(data.rollsLeft || 3);
+      } catch (e) {
+        console.error('Failed to load saved game', e);
+      }
+    }
+
     // Loading screen animation
     const interval = setInterval(() => {
       setLoadingProgress(prev => {
@@ -74,6 +307,24 @@ const DungeonYahtzee = () => {
     }
   }, [loading]);
 
+  // Auto-save game state
+  useEffect(() => {
+    if (!loading && !gameOver && !victory && enemy) {
+      const gameState = {
+        hp, maxHp, mana, maxMana, shield, floor, gold, xp, level, artifacts, dice, rollsLeft,
+        diceBuild, collectedDice, shopDice
+      };
+      localStorage.setItem('dungeon-yahtzee-save', JSON.stringify(gameState));
+    }
+  }, [hp, maxHp, mana, maxMana, shield, floor, gold, xp, level, artifacts, dice, rollsLeft, diceBuild, collectedDice, shopDice, loading, gameOver, victory, enemy]);
+
+  // Generate shop dice on game start
+  useEffect(() => {
+    if (!loading && shopDice === 0) {
+      generateShopDice();
+    }
+  }, [loading, shopDice]);
+
   useEffect(() => {
     if (floor > 1) {
       spawnEnemy();
@@ -81,7 +332,8 @@ const DungeonYahtzee = () => {
   }, [floor]);
 
   useEffect(() => {
-    const xpNeeded = level * 50;
+    // Enhanced XP scaling for endless gameplay
+    const xpNeeded = level * 50 + Math.floor(level * level * 0.5); // Quadratic scaling
     if (xp >= xpNeeded) {
       levelUp();
     }
@@ -89,59 +341,132 @@ const DungeonYahtzee = () => {
 
   const levelUp = () => {
     setLevel(level + 1);
-    const newMaxHp = maxHp + 10;
-    const newMaxMana = maxMana + 5;
+    
+    // Enhanced scaling for endless gameplay
+    const hpGain = 10 + Math.floor(level / 5); // +1 HP per 5 levels
+    const manaGain = 5 + Math.floor(level / 10); // +1 Mana per 10 levels
+    
+    const newMaxHp = maxHp + hpGain;
+    const newMaxMana = maxMana + manaGain;
     setMaxHp(newMaxHp);
-    setHp(hp + 10);
+    setHp(hp + hpGain);
     setMaxMana(newMaxMana);
     setMana(newMaxMana);
-    setMessage(`⭐ AWANS! Poziom ${level + 1}! +10 HP, +5 Many!`);
-    
-    if (level % 3 === 0) {
-      const randomArtifact = artifactsList[Math.floor(Math.random() * artifactsList.length)];
-      setArtifacts([...artifacts, randomArtifact]);
-      setTimeout(() => {
-        setMessage(`🎁 Znaleziono: ${randomArtifact.name} ${randomArtifact.icon}!`);
-      }, 1500);
-    }
+    setMessage(`⚡ LEVEL UP! Poziom ${level + 1}! +${hpGain} HP, +${manaGain} Mana!`);
   };
 
   const spawnEnemy = () => {
+    const isElite = Math.random() < 0.3; // 30% szansy na elite enemy
     const isBoss = floor % 5 === 0;
     setBossFloor(isBoss);
     
+    // Endless scaling - cycle through enemies infinitely
     let index;
     if (isBoss) {
       index = Math.min(Math.floor(floor / 5) + 3, enemies.length - 1);
     } else {
-      index = Math.min(Math.floor((floor - 1) / 1.5), enemies.length - 2);
+      // Cycle through enemies based on floor, but allow infinite scaling
+      const baseIndex = Math.floor((floor - 1) / 1.5);
+      index = baseIndex % (enemies.length - 1); // Cycle through all enemies except last
     }
     
     const enemyTemplate = enemies[index];
-    const scaledHp = Math.floor(enemyTemplate.hp * (1 + floor * 0.1));
-    const scaledDmg = Math.floor(enemyTemplate.dmg * (1 + floor * 0.08));
+    
+    // Enhanced scaling for endless gameplay
+    const floorMultiplier = 1 + (floor * 0.15); // 15% increase per floor
+    const bossMultiplier = isBoss ? 2.0 : 1.0;
+    const eliteMultiplier = isElite ? 1.8 : 1.0;
+    
+    let scaledHp = Math.floor(enemyTemplate.hp * floorMultiplier * bossMultiplier * eliteMultiplier);
+    let scaledDmg = Math.floor(enemyTemplate.dmg * floorMultiplier * bossMultiplier * eliteMultiplier);
+    
+    // Additional scaling for very high floors (floor 20+)
+    if (floor >= 20) {
+      const extraMultiplier = 1 + ((floor - 20) * 0.05); // 5% extra per floor after 20
+      scaledHp = Math.floor(scaledHp * extraMultiplier);
+      scaledDmg = Math.floor(scaledDmg * extraMultiplier);
+    }
     
     setEnemy({
       ...enemyTemplate,
       hp: scaledHp,
       currentHp: scaledHp,
-      dmg: scaledDmg
+      dmg: scaledDmg,
+      isElite: isElite
     });
     setRollsLeft(3);
     setHeld([false, false, false, false, false]);
     setCombatPhase('rolling');
-    setMessage(`${isBoss ? '⚠️ BOSS! ' : ''}Piętro ${floor}: ${enemyTemplate.icon} ${enemyTemplate.name}!`);
+    setIsRolling(false);
+    
+    if (isElite) {
+      setMessage(`⚡ ELITE ENCOUNTER! ${enemyTemplate.icon} ${enemyTemplate.name}! [Lvl ${level}]`);
+    } else if (isBoss) {
+      setMessage(`⚠️ BOSS! Piętro ${floor}: ${enemyTemplate.icon} ${enemyTemplate.name}!`);
+    } else {
+      setMessage(`Piętro ${floor}: ${enemyTemplate.icon} ${enemyTemplate.name}`);
+    }
   };
 
   const rollDice = () => {
-    if (rollsLeft <= 0 || combatPhase !== 'rolling') return;
+    if (rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling) return;
     
+    setIsRolling(true);
+    setSpecialCombo(''); // Clear previous special combo
+    
+    // Animate dice rolling with random values - slower animation
+    let animationFrame = 0;
+    const animationInterval = setInterval(() => {
+      animationFrame++;
+      // Show random values during animation (only for non-held dice)
+      setDice(prevDice => prevDice.map((d, i) => 
+        held[i] ? d : Math.floor(Math.random() * 6) + 1
+      ));
+      
+      // Stop animation after 20 frames (~1000ms) - slower
+      if (animationFrame >= 20) {
+        clearInterval(animationInterval);
+        
+        // Set final values
     const newDice = dice.map((d, i) => held[i] ? d : Math.floor(Math.random() * 6) + 1);
     setDice(newDice);
+        setIsRolling(false);
     setRollsLeft(rollsLeft - 1);
+        
+        // Check for special combos
+        checkSpecialCombo(newDice);
     
     if (rollsLeft === 1) {
       setMessage('⚡ Ostatni rzut! Wybierz mądrze!');
+        }
+      }
+    }, 50);
+  };
+
+  const checkSpecialCombo = (diceValues) => {
+    const counts = {};
+    diceValues.forEach(d => counts[d] = (counts[d] || 0) + 1);
+    const values = Object.values(counts).sort((a, b) => b - a);
+    
+    // Check for Yahtzee
+    if (values[0] === 5) {
+      setSpecialCombo('yahtzee');
+      setTimeout(() => setSpecialCombo(''), 3000);
+      return;
+    }
+    
+    // Check for straight
+    const sorted = [...diceValues].sort((a, b) => a - b);
+    const isSequence = (arr) => {
+      for (let i = 1; i < arr.length; i++) {
+        if (arr[i] !== arr[i-1] + 1) return false;
+      }
+      return true;
+    };
+    
+    if (isSequence(sorted)) {
+      setSpecialCombo('straight');
+      setTimeout(() => setSpecialCombo(''), 3000);
     }
   };
 
@@ -222,9 +547,9 @@ const DungeonYahtzee = () => {
       setStatusEffects({...statusEffects, burning: Math.max(0, statusEffects.burning - 2)});
     }
     
-    // Blessed bonus
+    // Blessed bonus - 50%
     if (statusEffects.blessed > 0) {
-      finalDmg = Math.floor(finalDmg * 1.3);
+      finalDmg = Math.floor(finalDmg * 1.5);
       setStatusEffects({...statusEffects, blessed: statusEffects.blessed - 1});
     }
     
@@ -245,17 +570,18 @@ const DungeonYahtzee = () => {
           }
         });
         
-        setMessage(`✨ Pokonano ${enemy.name}! +${lootGold} złota, +${enemy.xp} XP!`);
+        // Check if elite enemy - increment elite kills
+        if (enemy.isElite) {
+          setEliteKills(eliteKills + 1);
+        }
         
-        if (floor >= 15) {
-          setVictory(true);
-          setMessage('👑 LEGENDA LOCHÓW! Pokonałeś wszystkie piętra!');
-        } else {
+        setMessage(`⚡ Pokonano ${enemy.name}! +${lootGold} 💰, +${enemy.xp} XP!`);
+        
+        // Endless scaling - no victory condition
           setTimeout(() => {
             setFloor(floor + 1);
             setMana(Math.min(maxMana, mana + 10));
           }, 2000);
-        }
       } else {
         enemyAttack();
       }
@@ -359,15 +685,73 @@ const DungeonYahtzee = () => {
     }
   };
 
+  // Generate random dice for shop
+  const generateShopDice = () => {
+    setShopDice(Math.floor(Math.random() * 6) + 1);
+  };
+
+  // Buy dice from shop
+  const buyDice = () => {
+    const cost = 10 + (shopDice * 2); // Koszt: 10 + (wartość kostki * 2)
+    if (gold >= cost) {
+      setGold(gold - cost);
+      const newCollected = [...collectedDice];
+      newCollected[shopDice - 1] += 1; // shopDice 1-6, indeks 0-5
+      setCollectedDice(newCollected);
+      
+      // Generate new random dice
+      setShopDice(Math.floor(Math.random() * 6) + 1);
+    }
+  };
+
   const buyBlessing = () => {
     if (gold >= 40) {
       setGold(gold - 40);
       setStatusEffects({...statusEffects, blessed: 3});
-      setMessage('✨ Błogosławieństwo! +30% DMG przez 3 tury!');
+      setMessage('✨ Błogosławieństwo! +50% DMG przez 3 tury!');
     }
   };
 
+  const saveHighScore = () => {
+    const score = {
+      name: playerName || 'ANON',
+      level,
+      floor,
+      gold,
+      artifacts: artifacts.length,
+      date: new Date().toLocaleDateString('pl-PL'),
+      time: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const highScores = JSON.parse(localStorage.getItem('dungeon-yahtzee-scores') || '[]');
+    highScores.push(score);
+    highScores.sort((a, b) => {
+      if (b.floor !== a.floor) return b.floor - a.floor;
+      if (b.level !== a.level) return b.level - a.level;
+      return b.gold - a.gold;
+    });
+    const top10 = highScores.slice(0, 10);
+    localStorage.setItem('dungeon-yahtzee-scores', JSON.stringify(top10));
+  };
+
+  const saveGame = () => {
+    const gameState = {
+      dice, held, rollsLeft, hp, maxHp, shield, mana, maxMana, floor, gold, xp, level,
+      artifacts, statusEffects, eliteKills, diceBuild, collectedDice, shopDice,
+      playerName: playerName || 'ANON'
+    };
+    localStorage.setItem('dungeon-yahtzee-save', JSON.stringify(gameState));
+    setMessage('Gra zapisana!');
+    setTimeout(() => setMessage(''), 2000);
+  };
+
+
   const resetGame = () => {
+    // Save high score if game ended
+    if (gameOver || victory) {
+      saveHighScore();
+    }
+    
     setHp(60);
     setMaxHp(60);
     setMana(30);
@@ -388,6 +772,22 @@ const DungeonYahtzee = () => {
     setCriticalHit(false);
     setEnemy(null);
     setCombatPhase('rolling');
+    setIsRolling(false);
+    setDice([1, 2, 3, 4, 5]);
+    setEliteKills(0);
+    setShowArtifacts(false);
+    setShowForge(false);
+    setActiveForgeTab('enhancement');
+    setDiceBuild({
+      level: 0,
+      enhancement: 0,
+      enchantment: 0,
+      evolution: 0
+    });
+    setCollectedDice([0, 0, 0, 0, 0, 0]);
+    setShopDice(0);
+    setSpecialCombo('');
+    localStorage.removeItem('dungeon-yahtzee-save');
     setTimeout(() => spawnEnemy(), 100);
   };
 
@@ -395,257 +795,428 @@ const DungeonYahtzee = () => {
 
   // Loading Screen
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white flex items-center justify-center overflow-hidden relative">
-        {/* Animated background particles */}
+    const highScores = JSON.parse(localStorage.getItem('dungeon-yahtzee-scores') || '[]').slice(0, 3);
+
+  return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center overflow-hidden relative">
+        {/* Cyberpunk grid background */}
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'linear-gradient(rgba(0,255,150,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,150,0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px'
+        }} />
+        
+        {/* Animated neon particles */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(30)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-purple-500 rounded-full opacity-20 animate-pulse"
+              className="absolute rounded-full opacity-30 animate-pulse"
               style={{
+                width: `${Math.random() * 4 + 2}px`,
+                height: `${Math.random() * 4 + 2}px`,
+                backgroundColor: ['#00ff96', '#ff00ff', '#00ffff'][Math.floor(Math.random() * 3)],
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 3}s`
+                animationDuration: `${2 + Math.random() * 3}s`,
+                boxShadow: `0 0 20px currentColor`
               }}
             />
           ))}
         </div>
 
-        <div className="text-center z-10 px-4">
-          {/* Animated dice icons */}
-          <div className="flex justify-center gap-4 mb-8 animate-bounce">
-            <div className="text-6xl md:text-8xl animate-spin" style={{ animationDuration: '3s' }}>🎲</div>
-            <div className="text-6xl md:text-8xl animate-spin" style={{ animationDuration: '2.5s', animationDirection: 'reverse' }}>🎲</div>
+        <div className="text-center z-10 px-4 max-w-4xl w-full">
+          {/* Animated dice with toxic glow */}
+          <div className="flex justify-center gap-6 mb-8 animate-bounce">
+            <div className="text-6xl md:text-8xl animate-spin drop-shadow-[0_0_25px_rgba(0,255,150,0.8)]" style={{ animationDuration: '3s' }}>🎲</div>
+            <div className="text-6xl md:text-8xl animate-spin drop-shadow-[0_0_25px_rgba(255,0,255,0.8)]" style={{ animationDuration: '2.5s', animationDirection: 'reverse' }}>🎲</div>
           </div>
 
-          {/* Title with gradient and glow */}
-          <h1 className="text-5xl md:text-7xl font-bold mb-4 animate-pulse">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600 drop-shadow-2xl">
-              Kości Chaosu
+          {/* Cyberpunk title with toxic glow */}
+          <h1 className="text-5xl md:text-7xl font-bold mb-2 relative">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-cyan-400 to-pink-500 drop-shadow-2xl animate-pulse">
+              KOŚCI CHAOSU
             </span>
-          </h1>
+            <div className="absolute inset-0 blur-xl opacity-50">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-cyan-400 to-pink-500">
+                KOŚCI CHAOSU
+              </span>
+            </div>
+        </h1>
           
-          <p className="text-xl md:text-2xl text-purple-300 mb-8 font-semibold animate-pulse">
-            ⚔️ Roguelike Dice Adventure ⚔️
+          <p className="text-lg md:text-xl mb-8 font-bold relative">
+            <span className="text-green-400 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]">⚡ CYBERPUNK</span>
+            {' '}
+            <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]">DICE</span>
+            {' '}
+            <span className="text-pink-500 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]">ROGUE ⚡</span>
           </p>
 
-          {/* Loading counter */}
-          <div className="mb-6">
-            <div className="text-6xl md:text-8xl font-bold text-yellow-400 mb-4 tabular-nums animate-pulse">
-              {loadingProgress}%
-            </div>
-            
-            {/* Progress bar */}
-            <div className="w-64 md:w-96 mx-auto bg-gray-800 rounded-full h-4 border-2 border-purple-500 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 h-full rounded-full transition-all duration-300 ease-out shadow-lg shadow-purple-500"
-                style={{ width: `${loadingProgress}%` }}
-              >
-                <div className="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse" />
+          {/* High Scores Leaderboard */}
+          {highScores.length > 0 && (
+            <div className="mb-8 bg-black bg-opacity-60 border-2 border-green-500 rounded-lg py-4 px-16 shadow-[0_0_30px_rgba(0,255,150,0.3)]">
+              <h2 className="text-xl md:text-2xl font-bold mb-4 text-green-400 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]">
+                🏆 TOP RUNS 🏆
+              </h2>
+              <div className="space-y-2">
+                {highScores.map((score, i) => (
+                  <div key={i} className={`flex justify-between items-center p-2 rounded ${
+                    i === 0 ? 'bg-green-900 bg-opacity-40 border border-green-500' : 'bg-gray-900 bg-opacity-40'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-2xl font-bold ${
+                        i === 0 ? 'text-green-400' : i === 1 ? 'text-cyan-400' : 'text-pink-400'
+                      }`}>#{i + 1}</span>
+                      <div className="text-left">
+                        <div className="font-bold text-white">
+                          {score.name || 'ANON'} • Lvl {score.level} • Piętro {score.floor}
+                </div>
+                        <div className="text-xs text-gray-400">{score.date} {score.time}</div>
               </div>
             </div>
-          </div>
+                    <div className="text-right">
+                      <div className="text-green-400 font-bold">{score.gold} 💰</div>
+                      <div className="text-xs text-pink-400">{score.artifacts} 🎁</div>
+                </div>
+              </div>
+                ))}
+            </div>
+              </div>
+          )}
 
-          {/* Loading text */}
-          <p className="text-sm text-gray-400 animate-pulse">
-            {loadingProgress < 30 && '📜 Generowanie lochów...'}
-            {loadingProgress >= 30 && loadingProgress < 60 && '⚔️ Przygotowywanie wrogów...'}
-            {loadingProgress >= 60 && loadingProgress < 90 && '🎲 Tasowanie kości...'}
-            {loadingProgress >= 90 && '✨ Prawie gotowe...'}
+          {/* Loading counter with toxic effects */}
+          <div className="mb-6">
+            <div className="text-6xl md:text-8xl font-bold mb-4 tabular-nums relative">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400 animate-pulse">
+                {loadingProgress}%
+              </span>
+              <div className="absolute inset-0 blur-lg opacity-50">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
+                  {loadingProgress}%
+                </span>
+            </div>
+                </div>
+            
+            {/* Cyberpunk progress bar */}
+            <div className="w-64 md:w-96 mx-auto bg-black rounded-full h-4 border-2 border-green-500 overflow-hidden shadow-[0_0_20px_rgba(0,255,150,0.5)]">
+              <div 
+                className="bg-gradient-to-r from-green-500 via-cyan-500 to-pink-500 h-full rounded-full transition-all duration-300 ease-out relative"
+                style={{ width: `${loadingProgress}%` }}
+              >
+                <div className="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-50 animate-pulse" />
+                <div className="absolute inset-0 shadow-[0_0_20px_rgba(0,255,150,0.8)]" />
+              </div>
+            </div>
+              </div>
+
+          {/* Loading text with glitch effect */}
+          <p className="text-sm font-bold tracking-wider animate-pulse">
+            <span className={`${
+              loadingProgress < 30 ? 'text-green-400' :
+              loadingProgress < 60 ? 'text-cyan-400' :
+              loadingProgress < 90 ? 'text-pink-400' : 'text-green-400'
+            } drop-shadow-[0_0_10px_currentColor]`}>
+              {loadingProgress < 30 && '>>> INICJALIZACJA SYSTEMU...'}
+              {loadingProgress >= 30 && loadingProgress < 60 && '>>> ŁADOWANIE PRZECIWNIKÓW...'}
+              {loadingProgress >= 60 && loadingProgress < 90 && '>>> SYNCHRONIZACJA DANYCH...'}
+              {loadingProgress >= 90 && '>>> SYSTEM GOTOWY <<<'}
+            </span>
           </p>
-        </div>
-      </div>
+            </div>
+          </div>
     );
   }
 
   if (!enemy) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white p-2 md:p-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Compact Top Bar */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-3 mb-3 border-2 border-purple-500 shadow-lg">
+    <div className="min-h-screen bg-black text-white p-2 md:p-4 relative overflow-hidden">
+      {/* Cyberpunk grid background */}
+      <div className="absolute inset-0 opacity-10" style={{
+        backgroundImage: 'linear-gradient(rgba(0,255,150,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,150,0.2) 1px, transparent 1px)',
+        backgroundSize: '40px 40px'
+      }} />
+      
+      <div className="max-w-5xl mx-auto relative z-10">
+        {/* Compact Top Bar - Cyberpunk Style */}
+        <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-green-500 shadow-[0_0_30px_rgba(0,255,150,0.3)]">
           {/* Stats Grid */}
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
             <div className="flex items-center gap-1">
-              <Heart className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <Heart className="w-5 h-5 text-pink-500 flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
               <div className="min-w-0">
-                <div className="text-xs text-red-400 font-bold">{hp}/{maxHp}</div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-red-500 h-1.5 rounded-full transition-all" style={{width: `${(hp/maxHp)*100}%`}}></div>
+                <div className="text-xs text-pink-400 font-bold">{hp}/{maxHp}</div>
+                <div className="w-full bg-gray-900 rounded-full h-1.5 border border-pink-500">
+                  <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(255,0,255,0.5)]" style={{width: `${(hp/maxHp)*100}%`}}></div>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Zap className="w-5 h-5 text-blue-500 flex-shrink-0" />
+              <Zap className="w-5 h-5 text-cyan-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
               <div className="min-w-0">
-                <div className="text-xs text-blue-400 font-bold">{mana}/{maxMana}</div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{width: `${(mana/maxMana)*100}%`}}></div>
+                <div className="text-xs text-cyan-400 font-bold">{mana}/{maxMana}</div>
+                <div className="w-full bg-gray-900 rounded-full h-1.5 border border-cyan-500">
+                  <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,255,255,0.5)]" style={{width: `${(mana/maxMana)*100}%`}}></div>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Shield className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-              <div className="text-xs text-cyan-400 font-bold">{shield}</div>
+              <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
+              <div className="text-xs text-cyan-300 font-bold">{shield}</div>
             </div>
             <div className="flex items-center gap-1">
-              <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-              <div className="min-w-0">
-                <div className="text-xs text-yellow-400 font-bold">Lvl {level} • {floor}/15</div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-yellow-500 h-1.5 rounded-full transition-all" style={{width: `${(xp % (level*50))/(level*50)*100}%`}}></div>
+              <Trophy className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]" />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-green-400 font-bold">Lvl {level} • Piętro {floor}</div>
+                <div className="w-full bg-gray-900 rounded-full h-1.5 border border-green-500">
+                  <div className="bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,255,150,0.5)]" style={{width: `${(xp % (level*50 + Math.floor(level*level*0.5)))/(level*50 + Math.floor(level*level*0.5))*100}%`}}></div>
                 </div>
               </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 flex items-center justify-center text-yellow-400 flex-shrink-0 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">
+                💾
+              </div>
+              <button
+                onClick={saveGame}
+                className="text-[10px] bg-yellow-900 border border-yellow-500 text-yellow-400 hover:bg-yellow-800 px-1.5 py-0.5 rounded transition-all shadow-[0_0_5px_rgba(255,255,0,0.3)] hover:shadow-[0_0_10px_rgba(255,255,0,0.6)]"
+              >
+                ZAPISZ
+              </button>
             </div>
             <div className="flex items-center gap-1 col-span-2 md:col-span-1">
-              <Sparkles className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-              <div className="text-xs text-yellow-300 font-bold">{gold} 💰</div>
+              <Sparkles className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]" />
+              <div className="text-xs text-green-300 font-bold">{gold} 💰</div>
             </div>
             <div className="flex items-center gap-1 col-span-3 md:col-span-1">
-              <Skull className="w-5 h-5 text-purple-400 flex-shrink-0" />
-              <div className="text-xs text-purple-300 font-bold">Artefakty: {artifacts.length}</div>
+              <Skull className="w-5 h-5 text-pink-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
+              <div className="text-xs text-pink-300 font-bold flex gap-1">
+                {artifactsList.filter(art => art.unlocked).map((artifact, i) => (
+                  <span key={i} title={artifact.name} className="text-lg">{artifact.icon}</span>
+                ))}
+                {artifactsList.filter(art => art.unlocked).length === 0 && (
+                  <span className="text-gray-500">Brak artefaktów</span>
+                )}
+              </div>
             </div>
           </div>
           
           {/* Status Effects & Artifacts Row */}
           <div className="flex gap-2 flex-wrap items-center">
-            {/* Status Effects */}
-            {statusEffects.burning > 0 && (
-              <div className="bg-orange-600 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
-                <Flame className="w-3 h-3" /> {statusEffects.burning} DMG
-              </div>
-            )}
-            {statusEffects.frozen && (
-              <div className="bg-blue-600 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
-                <Droplet className="w-3 h-3" /> Zamrożony
-              </div>
-            )}
-            {statusEffects.blessed > 0 && (
-              <div className="bg-yellow-600 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> +30% ({statusEffects.blessed})
-              </div>
-            )}
-            
-            {/* Artifacts with tooltips */}
-            {artifacts.length > 0 && (
-              <>
-                {artifacts.map((art, i) => (
-                  <div 
-                    key={i} 
-                    className="group relative bg-purple-900 bg-opacity-60 px-2 py-0.5 rounded-full text-xs border border-purple-400 cursor-help hover:bg-purple-800 transition-all"
-                  >
-                    <span>{art.icon}</span>
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                      <div className="bg-gray-900 border-2 border-purple-400 rounded-lg p-2 shadow-xl whitespace-nowrap">
-                        <div className="text-purple-300 font-bold text-sm">{art.icon} {art.name}</div>
-                        <div className="text-gray-300 text-xs mt-1">{art.desc}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
+          {/* Status Effects */}
+              {statusEffects.burning > 0 && (
+              <div className="bg-pink-900 border border-pink-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(255,0,255,0.5)]">
+                <Flame className="w-3 h-3 text-pink-400" /> <span className="text-pink-300">{statusEffects.burning} DMG</span>
+                </div>
+              )}
+              {statusEffects.frozen && (
+              <div className="bg-cyan-900 border border-cyan-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(0,255,255,0.5)]">
+                <Droplet className="w-3 h-3 text-cyan-400" /> <span className="text-cyan-300">Frozen</span>
+                </div>
+              )}
+              {statusEffects.blessed > 0 && (
+              <div className="bg-green-900 border border-green-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(0,255,150,0.5)]">
+                <Sparkles className="w-3 h-3 text-green-400" /> <span className="text-green-300">+50% ({statusEffects.blessed})</span>
+                </div>
+              )}
+
+            </div>
         </div>
 
-        {/* Enhanced Enemy */}
-        {!gameOver && !victory && (
-          <div className={`rounded-lg p-4 mb-3 text-center border-3 transition-all ${
-            bossFloor 
-              ? 'bg-gradient-to-br from-red-900 via-purple-900 to-black border-yellow-500 shadow-lg shadow-red-500' 
-              : 'bg-gradient-to-br from-red-800 to-gray-900 border-red-600'
-          }`}>
-            <div className="flex items-center justify-center gap-4">
-              <div className="text-5xl">{enemy.icon}</div>
-              <div className="flex-1 text-left">
-                <div className={`text-2xl font-bold mb-1 ${bossFloor ? 'text-yellow-300' : 'text-red-300'}`}>
-                  {bossFloor && '👑 '}{enemy.name}{bossFloor && ' 👑'}
+
+        {/* Special Combo Notifications - BIGGER */}
+        {specialCombo === 'yahtzee' && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none bg-black bg-opacity-30">
+            <div className="text-center animate-bounce" style={{transform: 'scale(0.8)'}}>
+              <div className="text-7xl md:text-9xl mb-6 drop-shadow-[0_0_60px_rgba(255,0,255,1)] animate-spin" style={{animationDuration: '2s'}}>🎲</div>
+              <div className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 animate-pulse drop-shadow-[0_0_50px_rgba(255,0,255,1)] mb-4">
+                YAHTZEE!!!
                 </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Heart className="w-5 h-5 text-red-400" />
-                  <div className="text-xl font-bold">{enemy.currentHp}/{enemy.hp}</div>
-                  <div className="flex-1 bg-gray-700 rounded-full h-3 border border-gray-600 max-w-xs">
-                    <div className="bg-gradient-to-r from-red-600 to-red-400 h-full rounded-full transition-all" style={{width: `${(enemy.currentHp/enemy.hp)*100}%`}}></div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-orange-300">
-                  <div className="flex items-center gap-1">
-                    <Sword className="w-4 h-4" />
-                    <span className="font-semibold text-sm">{enemy.dmg} DMG</span>
-                  </div>
-                  {enemy.special && (
-                    <div className="bg-purple-800 px-2 py-1 rounded-full text-xs">
-                      ⚡ {enemy.special.toUpperCase()}
-                    </div>
-                  )}
-                </div>
+              <div className="text-4xl md:text-5xl text-green-400 mt-4 drop-shadow-[0_0_30px_rgba(0,255,150,1)] font-bold">
+                ⚡ ULTIMATE COMBO! ⚡
               </div>
             </div>
           </div>
         )}
 
-        {/* Message with animation */}
-        <div className={`rounded-lg p-2 mb-3 text-center font-semibold text-base border transition-all ${
+        {specialCombo === 'straight' && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none bg-black bg-opacity-30">
+            <div className="text-center animate-bounce" style={{transform: 'scale(0.8)'}}>
+              <div className="text-7xl md:text-9xl mb-6 drop-shadow-[0_0_60px_rgba(0,255,255,1)] animate-pulse">🎯</div>
+              <div className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-green-400 to-pink-400 animate-pulse drop-shadow-[0_0_50px_rgba(0,255,255,1)] mb-4">
+                DUŻY STRIT!
+              </div>
+              <div className="text-4xl md:text-5xl text-cyan-400 mt-4 drop-shadow-[0_0_30px_rgba(0,255,255,1)] font-bold">
+                ⚡ PERFECT SEQUENCE! ⚡
+              </div>
+            </div>
+          </div>
+        )}
+
+
+        {/* Enhanced Enemy - Cyberpunk */}
+        {!gameOver && !victory && (
+          <div className={`rounded-lg py-4 px-16 mb-3 text-center border-2 transition-all mx-auto ${
+            enemy.isElite
+              ? 'bg-black border-green-500 shadow-[0_0_50px_rgba(0,255,150,0.8)]'
+              : bossFloor 
+              ? 'bg-black border-pink-500 shadow-[0_0_40px_rgba(255,0,255,0.6)]' 
+              : 'bg-black border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]'
+          }`} style={{width: 'fit-content', minWidth: '200px', maxWidth: '400px'}}>
+            <div className="text-center">
+              <div className={`text-5xl mb-3 ${bossFloor ? 'drop-shadow-[0_0_20px_rgba(255,0,255,0.8)]' : 'drop-shadow-[0_0_15px_rgba(0,255,255,0.6)]'}`}>{enemy.icon}</div>
+              <div className={`text-2xl font-bold mb-3 ${
+                enemy.isElite ? 'text-green-400 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]' :
+                bossFloor ? 'text-pink-400 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]' : 
+                'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]'
+              }`}>
+                {enemy.isElite && '💎 ELITE: '}
+                {bossFloor && '⚡ '}
+                {enemy.name}
+                {bossFloor && ' ⚡'}
+                {enemy.isElite && ' 💎'}
+            </div>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Heart className="w-5 h-5 text-pink-500 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
+                <div className="text-xl font-bold text-pink-400">{enemy.currentHp}/{enemy.hp}</div>
+                <div className="w-32 bg-gray-900 rounded-full h-3 border border-pink-500">
+                  <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-full rounded-full transition-all shadow-[0_0_15px_rgba(255,0,255,0.6)]" style={{width: `${(enemy.currentHp/enemy.hp)*100}%`}}></div>
+            </div>
+            </div>
+              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center gap-1">
+                  <Sword className="w-4 h-4 text-cyan-400" />
+                  <span className="font-semibold text-sm text-cyan-300">{enemy.dmg} DMG</span>
+              </div>
+              {enemy.special && (
+                  <div className="bg-black border border-green-500 px-2 py-1 rounded-full text-xs text-green-400 shadow-[0_0_10px_rgba(0,255,150,0.5)]">
+                  ⚡ {enemy.special.toUpperCase()}
+                </div>
+              )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message with animation - Cyberpunk */}
+        <div className={`rounded-lg py-4 px-16 mb-3 text-center font-semibold text-base border-2 transition-all mx-auto ${
           criticalHit 
-            ? 'bg-yellow-600 border-yellow-400 animate-pulse' 
-            : 'bg-gradient-to-r from-blue-900 to-purple-900 border-blue-500'
-        }`}>
-          {criticalHit && '💥 KRYTYK! 💥 '}
+            ? 'bg-pink-900 border-pink-400 shadow-[0_0_30px_rgba(255,0,255,0.8)] animate-pulse text-pink-200' 
+            : 'bg-black border-green-500 shadow-[0_0_20px_rgba(0,255,150,0.4)] text-green-300'
+        }`} style={{width: 'fit-content', minWidth: '200px', maxWidth: '400px'}}>
+          {criticalHit && '⚡ CRITICAL HIT! ⚡ '}
           {message}
         </div>
 
-        {/* Combat History */}
+        {/* Combat History - Cyberpunk */}
         {comboHistory.length > 0 && !gameOver && !victory && (
-          <div className="bg-gray-800 bg-opacity-50 rounded-lg p-2 mb-3">
-            <div className="flex gap-1 flex-wrap">
+          <div className="bg-black border border-cyan-500 rounded-lg py-4 px-16 mb-3 shadow-[0_0_15px_rgba(0,255,255,0.3)] mx-auto" style={{width: 'fit-content', minWidth: '200px', maxWidth: '400px'}}>
+            <div className="flex gap-1 flex-wrap justify-center">
               {comboHistory.map((combo, i) => (
-                <div key={i} className={`px-2 py-0.5 rounded text-xs ${combo.crit ? 'bg-yellow-600' : 'bg-gray-700'}`}>
-                  {combo.crit && '💥'} {combo.name}: {combo.dmg}
+                <div key={i} className={`px-2 py-0.5 rounded text-xs border ${combo.crit ? 'bg-pink-900 border-pink-500 text-pink-300' : 'bg-gray-900 border-cyan-500 text-cyan-300'}`}>
+                  {combo.crit && '⚡'} {combo.name}: {combo.dmg}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Game Over / Victory */}
+        {/* Game Over / Victory - Cyberpunk */}
         {(gameOver || victory) && (
-          <div className="bg-gradient-to-br from-gray-900 to-black rounded-lg p-8 mb-4 text-center border-4 border-purple-500">
-            <div className="text-8xl mb-4">{victory ? '👑' : '💀'}</div>
-            <div className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-500">
-              {victory ? 'LEGENDARNY ZWYCIĘZCA!' : 'UPADEK BOHATERA'}
+          <div className={`bg-black rounded-lg py-4 px-16 mb-4 text-center border-2 ${
+            victory ? 'border-green-500 shadow-[0_0_50px_rgba(0,255,150,0.6)]' : 'border-pink-500 shadow-[0_0_50px_rgba(255,0,255,0.6)]'
+          }`}>
+            <div className={`text-8xl mb-4 ${victory ? 'drop-shadow-[0_0_30px_rgba(0,255,150,0.8)]' : 'drop-shadow-[0_0_30px_rgba(255,0,255,0.8)]'}`}>
+              {victory ? '👑' : '💀'}
+            </div>
+            <div className={`text-4xl font-bold mb-4 drop-shadow-[0_0_20px_currentColor] ${
+              victory ? 'text-green-400' : 'text-pink-400'
+            }`}>
+              {victory ? '>>> VICTORY ACHIEVED <<<' : '>>> SYSTEM FAILURE <<<'}
             </div>
             <div className="grid grid-cols-2 gap-4 mb-6 text-lg">
-              <div className="bg-gray-800 p-3 rounded">
-                <div className="text-gray-400">Poziom</div>
-                <div className="text-2xl font-bold text-yellow-400">{level}</div>
+              <div className="bg-gray-900 border border-green-500 p-3 rounded shadow-[0_0_15px_rgba(0,255,150,0.3)]">
+                <div className="text-gray-400 text-sm">LEVEL</div>
+                <div className="text-2xl font-bold text-green-400">{level}</div>
               </div>
-              <div className="bg-gray-800 p-3 rounded">
-                <div className="text-gray-400">Piętro</div>
-                <div className="text-2xl font-bold text-red-400">{floor}</div>
+              <div className="bg-gray-900 border border-cyan-500 p-3 rounded shadow-[0_0_15px_rgba(0,255,255,0.3)]">
+                <div className="text-gray-400 text-sm">FLOOR</div>
+                <div className="text-2xl font-bold text-cyan-400">{floor}</div>
               </div>
-              <div className="bg-gray-800 p-3 rounded">
-                <div className="text-gray-400">Złoto</div>
-                <div className="text-2xl font-bold text-yellow-300">{gold}</div>
+              <div className="bg-gray-900 border border-green-500 p-3 rounded shadow-[0_0_15px_rgba(0,255,150,0.3)]">
+                <div className="text-gray-400 text-sm">GOLD</div>
+                <div className="text-2xl font-bold text-green-300">{gold} 💰</div>
               </div>
-              <div className="bg-gray-800 p-3 rounded">
-                <div className="text-gray-400">Artefakty</div>
-                <div className="text-2xl font-bold text-purple-400">{artifacts.length}</div>
+              <div className="bg-gray-900 border border-pink-500 p-3 rounded shadow-[0_0_15px_rgba(255,0,255,0.3)]">
+                <div className="text-gray-400 text-sm">ARTIFACTS</div>
+                <div className="text-2xl font-bold text-pink-400 flex gap-2 flex-wrap">
+                  {artifactsList.filter(art => art.unlocked).map((artifact, i) => (
+                    <span key={i} title={artifact.name}>{artifact.icon}</span>
+                  ))}
+                  {artifactsList.filter(art => art.unlocked).length === 0 && (
+                    <span className="text-gray-500">Brak</span>
+                  )}
               </div>
             </div>
+            </div>
+            
+            {/* Player Name Input */}
+            {!showNameInput && (
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowNameInput(true)}
+                  className="bg-black border-2 border-cyan-500 hover:bg-cyan-900 px-6 py-3 rounded-lg font-bold text-lg text-cyan-400 shadow-[0_0_20px_rgba(0,255,255,0.5)] hover:shadow-[0_0_30px_rgba(0,255,255,0.8)] transition-all"
+                >
+                  {'>>> WPROWADŹ NAZWĘ (3 LITERY) <<<'}
+                </button>
+              </div>
+            )}
+            
+            {showNameInput && (
+              <div className="mb-4">
+                <div className="text-cyan-400 font-bold mb-2">WPROWADŹ SWOJĄ NAZWĘ:</div>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value.toUpperCase().slice(0, 3))}
+                  className="bg-black border-2 border-cyan-500 text-cyan-400 text-center text-2xl font-bold px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(0,255,255,0.5)] focus:shadow-[0_0_30px_rgba(0,255,255,0.8)] transition-all"
+                  placeholder="ABC"
+                  maxLength={3}
+                />
+                <div className="mt-2">
+                  <button
+                    onClick={() => {
+                      setShowNameInput(false);
+                      if (playerName.length > 0) {
+                        saveHighScore();
+                        setMessage('Wynik zapisany!');
+                        setTimeout(() => setMessage(''), 2000);
+                      }
+                    }}
+                    className="bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded-lg font-bold text-black mr-2"
+                  >
+                    ZAPISZ
+                  </button>
+                  <button
+                    onClick={() => setShowNameInput(false)}
+                    className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg font-bold text-white"
+                  >
+                    ANULUJ
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <button
               onClick={resetGame}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-8 py-4 rounded-lg font-bold text-xl shadow-lg"
+              className="bg-black border-2 border-green-500 hover:bg-green-900 px-8 py-4 rounded-lg font-bold text-xl text-green-400 shadow-[0_0_30px_rgba(0,255,150,0.5)] hover:shadow-[0_0_40px_rgba(0,255,150,0.8)] transition-all"
             >
-              🎮 Nowa Przygoda
+              {'>>> NEW RUN <<<'}
             </button>
           </div>
         )}
 
-        {/* Dice */}
+        {/* Dice - Cyberpunk */}
         {!gameOver && !victory && (
           <>
             <div className="flex justify-center gap-2 mb-3">
@@ -653,12 +1224,18 @@ const DungeonYahtzee = () => {
                 <button
                   key={i}
                   onClick={() => toggleHold(i)}
-                  disabled={rollsLeft === 3 || combatPhase !== 'rolling'}
-                  className={`w-16 h-16 md:w-20 md:h-20 text-3xl md:text-4xl font-bold rounded-xl transition-all shadow-lg ${
+                  disabled={rollsLeft === 3 || combatPhase !== 'rolling' || isRolling}
+                  className={`w-16 h-16 md:w-20 md:h-20 text-3xl md:text-4xl font-bold rounded-xl transition-all border-2 ${
                     held[i]
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-black transform scale-110 rotate-6 shadow-yellow-500'
-                      : 'bg-gradient-to-br from-white to-gray-200 text-black hover:scale-105'
-                  } ${rollsLeft === 3 || combatPhase !== 'rolling' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
+                      ? 'bg-black border-green-500 text-green-400 transform scale-110 rotate-6 shadow-[0_0_30px_rgba(0,255,150,0.8)]'
+                      : 'bg-black border-cyan-500 text-cyan-300 hover:scale-105 shadow-[0_0_20px_rgba(0,255,255,0.5)]'
+                  } ${rollsLeft === 3 || combatPhase !== 'rolling' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,255,255,0.8)]'} ${
+                    isRolling && !held[i] ? 'animate-dice-roll' : ''
+                  }`}
+                  style={isRolling && !held[i] ? {
+                    animation: `dice-roll 0.1s infinite, dice-shake 1s ease-in-out, dice-glow 1s ease-in-out`,
+                    animationDelay: `${i * 0.08}s`
+                  } : {}}
                 >
                   {d}
                 </button>
@@ -668,21 +1245,21 @@ const DungeonYahtzee = () => {
             <div className="text-center mb-3">
               <button
                 onClick={rollDice}
-                disabled={rollsLeft <= 0 || combatPhase !== 'rolling'}
-                className={`px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition-all ${
-                  rollsLeft <= 0 || combatPhase !== 'rolling'
-                    ? 'bg-gray-600 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105'
+                disabled={rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling}
+                className={`px-8 py-3 rounded-xl font-bold text-lg transition-all border-2 ${
+                  rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling
+                    ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                    : 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_30px_rgba(255,0,255,0.5)] hover:shadow-[0_0_40px_rgba(255,0,255,0.8)]'
                 }`}
               >
-                🎲 RZUĆ KOŚĆMI ({rollsLeft}/3)
+                {isRolling ? '>>> ROLLING...' : `>>> ROLL DICE (${rollsLeft}/3) >`}
               </button>
             </div>
 
-            {/* Enhanced Combos */}
+            {/* Enhanced Combos - Cyberpunk */}
             {rollsLeft < 3 && combatPhase === 'rolling' && (
-              <div className="bg-gray-900 bg-opacity-80 rounded-lg p-3 mb-3 border-2 border-purple-500">
-                <div className="text-lg font-bold mb-2 text-center text-purple-300">⚔️ WYBIERZ ATAK ⚔️</div>
+              <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-pink-500 shadow-[0_0_30px_rgba(255,0,255,0.4)]">
+                <div className="text-lg font-bold mb-2 text-center text-pink-400 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]">{'>>> SELECT ATTACK <<<'}</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {Object.entries(combos).map(([name, data]) => {
                     const canUse = data.dmg > 0 && data.mana <= mana;
@@ -691,20 +1268,20 @@ const DungeonYahtzee = () => {
                         key={name}
                         onClick={() => attack(name, data)}
                         disabled={!canUse}
-                        className={`p-2 rounded-lg font-semibold transition-all ${
+                        className={`p-2 rounded-lg font-semibold transition-all border-2 ${
                           !canUse
-                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                            ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed opacity-50'
                             : data.dmg >= 40
-                            ? 'bg-gradient-to-br from-red-600 via-orange-600 to-yellow-600 hover:from-red-700 hover:via-orange-700 hover:to-yellow-700 transform hover:scale-105 shadow-lg'
+                            ? 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_20px_rgba(255,0,255,0.6)]'
                             : data.dmg >= 25
-                            ? 'bg-gradient-to-br from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transform hover:scale-105'
-                            : 'bg-gradient-to-br from-red-700 to-orange-700 hover:from-red-800 hover:to-orange-800'
+                            ? 'bg-black border-cyan-500 text-cyan-400 hover:bg-cyan-900 transform hover:scale-105 shadow-[0_0_15px_rgba(0,255,255,0.5)]'
+                            : 'bg-black border-green-500 text-green-400 hover:bg-green-900 shadow-[0_0_10px_rgba(0,255,150,0.4)]'
                         }`}
                       >
                         <div className="text-xs opacity-80">{name}</div>
-                        <div className="text-xl font-bold">⚔️ {data.dmg}</div>
+                        <div className="text-xl font-bold">⚡ {data.dmg}</div>
                         {data.mana > 0 && (
-                          <div className="text-xs text-blue-300">💙 {data.mana}</div>
+                          <div className="text-xs text-cyan-300">💎 {data.mana}</div>
                         )}
                       </button>
                     );
@@ -713,67 +1290,289 @@ const DungeonYahtzee = () => {
               </div>
             )}
 
-            {/* Enhanced Shop */}
-            <div className="bg-gradient-to-br from-yellow-900 via-orange-900 to-red-900 rounded-lg p-3 border-2 border-yellow-600">
-              <div className="text-lg font-bold mb-2 text-yellow-300 text-center">🏪 SKLEP KUPCA</div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {/* Collapsible Main Menu */}
+            <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                <button
+                  onClick={() => setShowArtifacts(!showArtifacts)}
+                  className={`text-lg font-bold text-purple-400 text-center drop-shadow-[0_0_10px_rgba(147,51,234,0.8)] transition-all border-2 border-purple-500 rounded-lg py-2 ${
+                    artifactsList.some(art => art.unlocked) ? 'animate-pulse' : ''
+                  }`}
+                >
+                  {'>>> ARTEFAKTY <<<'}
+                </button>
+                <button
+                  onClick={() => setShowForge(!showForge)}
+                  className="text-lg font-bold text-cyan-400 text-center drop-shadow-[0_0_10px_rgba(0,255,255,0.8)] transition-all border-2 border-cyan-500 rounded-lg py-2"
+                >
+                  {'>>> KUŹNIA CHAOSU <<<'}
+                </button>
+              </div>
+              
+              {/* Shop Section - Hidden in collapsible menu */}
+              <div className="mb-4">
+                <div className="text-lg font-bold mb-2 text-green-400 text-center drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]">CYBER DICE WORLD</div>
+                
+
+                {/* Traditional Shop Items */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <button
                   onClick={usePotion}
                   disabled={gold < 25 || hp >= maxHp}
-                  className={`p-2 rounded-lg font-semibold transition-all ${
+                    className={`p-2 rounded-lg font-semibold transition-all border-2 ${
                     gold < 25 || hp >= maxHp
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 transform hover:scale-105'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">💖</div>
-                  <div className="text-sm">Eliksir Życia</div>
-                  <div className="text-xs text-yellow-300">25 💰</div>
+                        ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                        : 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_15px_rgba(255,0,255,0.5)]'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">💖</div>
+                    <div className="text-sm">HP Boost</div>
+                    <div className="text-xs text-green-300">25 💰</div>
                   <div className="text-xs opacity-80">+30 HP</div>
                 </button>
                 <button
                   onClick={buyManaPotion}
                   disabled={gold < 15 || mana >= maxMana}
-                  className={`p-2 rounded-lg font-semibold transition-all ${
+                    className={`p-2 rounded-lg font-semibold transition-all border-2 ${
                     gold < 15 || mana >= maxMana
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 transform hover:scale-105'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">💙</div>
-                  <div className="text-sm">Eliksir Many</div>
-                  <div className="text-xs text-yellow-300">15 💰</div>
-                  <div className="text-xs opacity-80">+20 Many</div>
+                        ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                        : 'bg-black border-cyan-500 text-cyan-400 hover:bg-cyan-900 transform hover:scale-105 shadow-[0_0_15px_rgba(0,255,255,0.5)]'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">💎</div>
+                    <div className="text-sm">Mana Boost</div>
+                    <div className="text-xs text-green-300">15 💰</div>
+                    <div className="text-xs opacity-80">+20 Mana</div>
                 </button>
                 <button
                   onClick={buyShield}
                   disabled={gold < 20}
-                  className={`p-2 rounded-lg font-semibold transition-all ${
+                    className={`p-2 rounded-lg font-semibold transition-all border-2 ${
                     gold < 20
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 transform hover:scale-105'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">🛡️</div>
-                  <div className="text-sm">Tarcza</div>
-                  <div className="text-xs text-yellow-300">20 💰</div>
-                  <div className="text-xs opacity-80">+15 Obrony</div>
+                        ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                        : 'bg-black border-cyan-500 text-cyan-400 hover:bg-cyan-900 transform hover:scale-105 shadow-[0_0_15px_rgba(0,255,255,0.5)]'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">🛡️</div>
+                    <div className="text-sm">Shield</div>
+                    <div className="text-xs text-green-300">20 💰</div>
+                    <div className="text-xs opacity-80">+15 Armor</div>
                 </button>
                 <button
                   onClick={buyBlessing}
                   disabled={gold < 40}
-                  className={`p-2 rounded-lg font-semibold transition-all ${
+                    className={`p-2 rounded-lg font-semibold transition-all border-2 ${
                     gold < 40
-                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 transform hover:scale-105'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">✨</div>
-                  <div className="text-sm">Błogosławieństwo</div>
-                  <div className="text-xs text-yellow-300">40 💰</div>
-                  <div className="text-xs opacity-80">+30% DMG x3</div>
+                        ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                        : 'bg-black border-green-500 text-green-400 hover:bg-green-900 transform hover:scale-105 shadow-[0_0_15px_rgba(0,255,150,0.5)]'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">✨</div>
+                    <div className="text-sm">Power Up</div>
+                    <div className="text-xs text-green-300">40 💰</div>
+                    <div className="text-xs opacity-80">+50% DMG x3</div>
+                  </button>
+                  <button
+                    onClick={buyDice}
+                    disabled={gold < (10 + (shopDice * 2))}
+                    className={`p-2 rounded-lg font-semibold transition-all border-2 ${
+                      gold < (10 + (shopDice * 2))
+                        ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                        : 'bg-black border-yellow-500 text-yellow-400 hover:bg-yellow-900 transform hover:scale-105 shadow-[0_0_15px_rgba(255,255,0,0.5)]'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">🎲</div>
+                    <div className="text-sm">Random Dice</div>
+                    <div className="text-xs text-yellow-300">{10 + (shopDice * 2)} 💰</div>
+                    <div className="text-xs opacity-80">Value: {shopDice}</div>
                 </button>
               </div>
+              </div>
+              
+              {/* Artifacts Section */}
+              {showArtifacts && (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {artifactsList.map((artifact, index) => (
+                    <div key={index} className={`rounded-lg p-3 border-2 transition-all ${
+                      artifact.unlocked 
+                        ? 'bg-green-900 border-green-500 shadow-[0_0_20px_rgba(0,255,150,0.4)]' 
+                        : 'bg-gray-900 border-gray-600 opacity-60'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">{artifact.icon}</span>
+                        <div className="flex-1">
+                          <div className={`font-bold text-sm ${
+                            artifact.unlocked ? 'text-green-400' : 'text-gray-500'
+                          }`}>
+                            {artifact.unlocked ? artifact.name : '???'}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {artifact.unlocked ? `Wymagane: ${artifact.requirement} elite` : `Wymagane: ${artifact.requirement} elite`}
+                          </div>
+                        </div>
+                      </div>
+                      {artifact.unlocked && (
+                        <div className="space-y-2">
+                          <div className="text-xs text-cyan-300 font-semibold">
+                            {artifact.desc}
+                          </div>
+                          <div className="text-xs text-gray-300 italic">
+                            "{artifact.lore}"
+                          </div>
+                        </div>
+                      )}
+                      {!artifact.unlocked && (
+                        <div className="text-xs text-gray-500 italic">
+                          Zabij {artifact.requirement} elite enemies, aby odblokować
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Forge Section */}
+              {showForge && (
+                <div className="mt-4">
+                  <div className="text-lg font-bold mb-4 text-cyan-400 text-center drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]">
+                    {'>>> KUŹNIA CHAOSU <<<'}
+                  </div>
+                  
+                  {/* Current Build Display */}
+                  <div className="bg-gray-900 border-2 border-cyan-500 rounded-lg p-4 mb-4">
+                    <div className="text-center text-cyan-300 font-bold mb-2">AKTUALNY BUILD KOSTEK</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                      <div className="text-center">
+                        <div className="text-gray-400">Poziom</div>
+                        <div className="text-cyan-400 font-bold">{diceBuild.level}/7</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400">Wzmocnienie</div>
+                        <div className="text-green-400 font-bold">{diceBuild.enhancement}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400">Zaczarowanie</div>
+                        <div className="text-purple-400 font-bold">{diceBuild.enchantment}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-gray-400">Ewolucja</div>
+                        <div className="text-pink-400 font-bold">{diceBuild.evolution}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Forge Tabs */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => setActiveForgeTab('enhancement')}
+                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
+                        activeForgeTab === 'enhancement'
+                          ? 'bg-green-900 border-green-500 text-green-400 shadow-[0_0_15px_rgba(0,255,150,0.5)]'
+                          : 'bg-gray-900 border-gray-600 text-gray-400 hover:border-green-500'
+                      }`}
+                    >
+                      Wzmocnienie
+                    </button>
+                    <button
+                      onClick={() => setActiveForgeTab('enchantment')}
+                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
+                        activeForgeTab === 'enchantment'
+                          ? 'bg-purple-900 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(147,51,234,0.5)]'
+                          : 'bg-gray-900 border-gray-600 text-gray-400 hover:border-purple-500'
+                      }`}
+                    >
+                      Zaczarowanie
+                    </button>
+                    <button
+                      onClick={() => setActiveForgeTab('evolution')}
+                      className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
+                        activeForgeTab === 'evolution'
+                          ? 'bg-pink-900 border-pink-500 text-pink-400 shadow-[0_0_15px_rgba(255,0,255,0.5)]'
+                          : 'bg-gray-900 border-gray-600 text-gray-400 hover:border-pink-500'
+                      }`}
+                    >
+                      Ewolucja
+                    </button>
+                  </div>
+
+                  {/* Tab Content */}
+                  {activeForgeTab === 'enhancement' && (
+                    <div className="bg-green-900 border-2 border-green-500 rounded-lg p-4">
+                      <div className="text-green-400 font-bold text-center mb-4">WZMOCNIENIE KOSTEK</div>
+                      <div className="text-center text-gray-300">
+                        Wkrótce dostępne...
+                      </div>
+                    </div>
+                  )}
+
+                  {activeForgeTab === 'enchantment' && (
+                    <div className="bg-purple-900 border-2 border-purple-500 rounded-lg p-4">
+                      <div className="text-purple-400 font-bold text-center mb-4">ZACZAROWANIE KOSTEK</div>
+                      <div className="text-center text-gray-300">
+                        Wkrótce dostępne...
+                      </div>
+                    </div>
+                  )}
+
+                  {activeForgeTab === 'evolution' && (
+                    <div className="bg-pink-900 border-2 border-pink-500 rounded-lg p-4">
+                      <div className="text-pink-400 font-bold text-center mb-4">EWOLUCJA KOSTEK</div>
+                      
+                      {/* Collected Dice Display */}
+                      <div className="mb-4">
+                        <div className="text-pink-300 font-bold text-center mb-2">ZEBRANE KOSTKI</div>
+                        <div className="grid grid-cols-6 gap-2">
+                          {collectedDice.map((count, index) => (
+                            <div key={index} className="bg-gray-800 border-2 border-pink-400 rounded-lg p-2 text-center">
+                              <div className="text-lg">🎲</div>
+                              <div className="text-xs text-pink-300">{index + 1}</div>
+                              <div className="text-xs text-pink-400 font-bold">{count}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[0,1,2,3,4,5,6,7].map(level => (
+                          <div key={level} className={`p-2 rounded border-2 text-center ${
+                            diceBuild.level >= level 
+                              ? 'bg-pink-500 border-pink-300 text-white' 
+                              : 'bg-gray-700 border-gray-500 text-gray-400'
+                          }`}>
+                            <div className="text-lg">🎲</div>
+                            <div className="text-xs">Lv.{level}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Merge Button */}
+                      <div className="mt-4 text-center">
+                        <button
+                          onClick={() => {
+                            // Simple merge logic: need 3 of same dice to upgrade
+                            const canUpgrade = collectedDice.some(count => count >= 3);
+                            if (canUpgrade && diceBuild.level < 7) {
+                              const newCollected = [...collectedDice];
+                              const diceIndex = newCollected.findIndex(count => count >= 3);
+                              newCollected[diceIndex] -= 3;
+                              setCollectedDice(newCollected);
+                              setDiceBuild(prev => ({...prev, level: prev.level + 1}));
+                            }
+                          }}
+                          disabled={!collectedDice.some(count => count >= 3) || diceBuild.level >= 7}
+                          className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                            collectedDice.some(count => count >= 3) && diceBuild.level < 7
+                              ? 'bg-pink-500 border-pink-300 text-white hover:bg-pink-600'
+                              : 'bg-gray-700 border-gray-500 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          MERGE (3x kostka → +1 poziom)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           </>
         )}

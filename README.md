@@ -11,6 +11,7 @@ Roguelike dice game combining classic Yahtzee mechanics with dungeon crawling RP
 - **Shop System** - Buy potions, shields, and blessings with earned gold
 - **Leveling System** - Gain XP and level up to increase your stats
 - **Critical Hits** - 15% base chance for double damage attacks
+- **📱 PWA Support** - Install as a mobile/desktop app for offline play!
 
 ## 🚀 Quick Start
 
@@ -28,6 +29,19 @@ npm run dev
 
 3. **Open browser:**
 Navigate to `http://localhost:5173`
+
+### 📱 Install as PWA (Progressive Web App)
+
+1. **Open the app** in Chrome, Edge, or Safari
+2. **Look for install prompt** in the address bar or app menu
+3. **Click "Install"** or "Add to Home Screen"
+4. **Launch** from your desktop or home screen like a native app!
+
+**Benefits:**
+- ✅ Works offline after first load
+- ✅ Standalone app window (no browser UI)
+- ✅ Fast loading with service worker caching
+- ✅ Desktop/mobile shortcuts
 
 ## 📦 Deploy to GitHub Pages
 
@@ -109,6 +123,7 @@ Your game will be available at: `https://YOUR_USERNAME.github.io/your-repo-name/
 - **Vite** - Build tool and dev server
 - **Tailwind CSS** - Styling
 - **Lucide React** - Icons
+- **vite-plugin-pwa** - Progressive Web App support
 - **GitHub Pages** - Hosting
 
 ## 📝 Project Structure

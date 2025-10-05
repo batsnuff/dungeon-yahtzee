@@ -1296,15 +1296,15 @@ const DungeonYahtzee = () => {
 
         {/* Combined Enemy Info & Combat History - Cyberpunk */}
         {!gameOver && !victory && (
-          <div className="flex gap-4 my-3 justify-center items-end" style={{marginTop: '13px', marginBottom: '13px'}}>
-            {/* Enemy Info Section - 80% */}
+          <div className="my-3" style={{marginTop: '13px', marginBottom: '13px'}}>
+            {/* Enemy Info Section */}
             <div className={`rounded-lg py-7 px-16 border-2 transition-all ${
               enemy.isElite
                 ? 'bg-black border-green-500 shadow-[0_0_50px_rgba(0,255,150,0.8)]'
                 : bossFloor 
                 ? 'bg-black border-pink-500 shadow-[0_0_40px_rgba(255,0,255,0.6)]' 
                 : 'bg-black border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]'
-            }`} style={{width: '60%', minWidth: '400px', maxWidth: '650px'}}>
+            }`} style={{minWidth: '400px', maxWidth: '650px', margin: '0 auto'}}>
             
             {/* Enemy Info Section */}
             <div className="text-center mb-4">
@@ -1374,47 +1374,49 @@ const DungeonYahtzee = () => {
               </div>
             )}
             </div>
+          </div>
+        )}
 
-            {/* Roll Dice Section - 40% */}
-            <div className="bg-black rounded-lg py-5 px-10 border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]" style={{width: '40%', minWidth: '300px', maxWidth: '500px'}}>
-              {/* Dice */}
-              <div className="flex justify-center gap-3 mb-6">
-                {dice.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggleHold(i)}
-                    disabled={rollsLeft === 3 || combatPhase !== 'rolling' || isRolling}
-                    className={`w-20 h-20 text-4xl font-bold rounded-xl transition-all border-2 ${
-                      held[i]
-                        ? 'bg-black border-green-500 text-green-400 transform scale-110 rotate-6 shadow-[0_0_30px_rgba(0,255,150,0.8)]'
-                        : 'bg-black border-cyan-500 text-cyan-300 hover:scale-105 shadow-[0_0_25px_rgba(0,255,255,0.5)]'
-                    } ${rollsLeft === 3 || combatPhase !== 'rolling' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,255,255,0.8)]'} ${
-                      isRolling && !held[i] ? 'animate-dice-roll' : ''
-                    }`}
-                    style={isRolling && !held[i] ? {
-                      animation: `dice-roll 0.1s infinite, dice-shake 1s ease-in-out, dice-glow 1s ease-in-out`,
-                      animationDelay: `${i * 0.08}s`
-                    } : {}}
-                  >
-                    {d}
-                  </button>
-                ))}
-              </div>
-
-              {/* Roll Button */}
-              <div className="text-center">
+        {/* Roll Dice Section - Below Monster Info */}
+        {!gameOver && !victory && (
+          <div className="bg-black rounded-lg py-5 px-10 border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)] my-4" style={{minWidth: '300px', maxWidth: '500px', margin: '0 auto'}}>
+            {/* Dice */}
+            <div className="flex justify-center gap-3 mb-6">
+              {dice.map((d, i) => (
                 <button
-                  onClick={rollDice}
-                  disabled={rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling}
-                  className={`px-7 py-3 rounded-xl font-bold text-base transition-all border-2 ${
-                    rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling
-                      ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
-                      : 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_30px_rgba(255,0,255,0.5)] hover:shadow-[0_0_40px_rgba(255,0,255,0.8)]'
+                  key={i}
+                  onClick={() => toggleHold(i)}
+                  disabled={rollsLeft === 3 || combatPhase !== 'rolling' || isRolling}
+                  className={`w-20 h-20 text-4xl font-bold rounded-xl transition-all border-2 ${
+                    held[i]
+                      ? 'bg-black border-green-500 text-green-400 transform scale-110 rotate-6 shadow-[0_0_30px_rgba(0,255,150,0.8)]'
+                      : 'bg-black border-cyan-500 text-cyan-300 hover:scale-105 shadow-[0_0_25px_rgba(0,255,255,0.5)]'
+                  } ${rollsLeft === 3 || combatPhase !== 'rolling' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,255,255,0.8)]'} ${
+                    isRolling && !held[i] ? 'animate-dice-roll' : ''
                   }`}
+                  style={isRolling && !held[i] ? {
+                    animation: `dice-roll 0.1s infinite, dice-shake 1s ease-in-out, dice-glow 1s ease-in-out`,
+                    animationDelay: `${i * 0.08}s`
+                  } : {}}
                 >
-                  {isRolling ? '>>> ROLLING...' : `>>> ROLL DICE (${rollsLeft}/3) >`}
+                  {d}
                 </button>
-              </div>
+              ))}
+            </div>
+
+            {/* Roll Button */}
+            <div className="text-center">
+              <button
+                onClick={rollDice}
+                disabled={rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling}
+                className={`px-7 py-3 rounded-xl font-bold text-base transition-all border-2 ${
+                  rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling
+                    ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                    : 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_30px_rgba(255,0,255,0.5)] hover:shadow-[0_0_40px_rgba(255,0,255,0.8)]'
+                }`}
+              >
+                {isRolling ? '>>> ROLLING...' : `>>> ROLL DICE (${rollsLeft}/3) >`}
+              </button>
             </div>
           </div>
         )}

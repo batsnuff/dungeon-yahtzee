@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Skull, Heart, Shield, Sword, Sparkles, Trophy, Zap, Flame, Droplet } from 'lucide-react';
 
 const DungeonYahtzee = () => {
+  const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [dice, setDice] = useState([1, 2, 3, 4, 5]);
   const [held, setHeld] = useState([false, false, false, false, false]);
   const [rollsLeft, setRollsLeft] = useState(3);
@@ -43,16 +45,34 @@ const DungeonYahtzee = () => {
   ];
 
   const artifactsList = [
-    { name: 'Pierścień Mocy', effect: 'dmg', value: 1.2, icon: '💍' },
-    { name: 'Amulet Życia', effect: 'hp', value: 20, icon: '📿' },
-    { name: 'Kryształ Many', effect: 'mana', value: 15, icon: '💎' },
-    { name: 'Maska Krytyka', effect: 'crit', value: 0.15, icon: '🎭' },
-    { name: 'Tarcza Odbicia', effect: 'reflect', value: 0.3, icon: '🛡️' }
+    { name: 'Pierścień Mocy', effect: 'dmg', value: 1.2, icon: '💍', desc: '+20% do wszystkich obrażeń' },
+    { name: 'Amulet Życia', effect: 'hp', value: 20, icon: '📿', desc: '+5 HP po każdym zabiciu' },
+    { name: 'Kryształ Many', effect: 'mana', value: 15, icon: '💎', desc: '+15 maksymalnej many' },
+    { name: 'Maska Krytyka', effect: 'crit', value: 0.15, icon: '🎭', desc: '+15% szansy na krytyka' },
+    { name: 'Tarcza Odbicia', effect: 'reflect', value: 0.3, icon: '🛡️', desc: 'Odbija 30% otrzymanych obrażeń' }
   ];
 
   useEffect(() => {
-    spawnEnemy();
+    // Loading screen animation
+    const interval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => setLoading(false), 500);
+          return 100;
+        }
+        return prev + Math.floor(Math.random() * 15) + 5;
+      });
+    }, 150);
+
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      spawnEnemy();
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (floor > 1) {
@@ -373,136 +393,203 @@ const DungeonYahtzee = () => {
 
   const combos = calculateCombos();
 
+  // Loading Screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white flex items-center justify-center overflow-hidden relative">
+        {/* Animated background particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-purple-500 rounded-full opacity-20 animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 3}s`
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="text-center z-10 px-4">
+          {/* Animated dice icons */}
+          <div className="flex justify-center gap-4 mb-8 animate-bounce">
+            <div className="text-6xl md:text-8xl animate-spin" style={{ animationDuration: '3s' }}>🎲</div>
+            <div className="text-6xl md:text-8xl animate-spin" style={{ animationDuration: '2.5s', animationDirection: 'reverse' }}>🎲</div>
+          </div>
+
+          {/* Title with gradient and glow */}
+          <h1 className="text-5xl md:text-7xl font-bold mb-4 animate-pulse">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600 drop-shadow-2xl">
+              Kości Chaosu
+            </span>
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-purple-300 mb-8 font-semibold animate-pulse">
+            ⚔️ Roguelike Dice Adventure ⚔️
+          </p>
+
+          {/* Loading counter */}
+          <div className="mb-6">
+            <div className="text-6xl md:text-8xl font-bold text-yellow-400 mb-4 tabular-nums animate-pulse">
+              {loadingProgress}%
+            </div>
+            
+            {/* Progress bar */}
+            <div className="w-64 md:w-96 mx-auto bg-gray-800 rounded-full h-4 border-2 border-purple-500 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 h-full rounded-full transition-all duration-300 ease-out shadow-lg shadow-purple-500"
+                style={{ width: `${loadingProgress}%` }}
+              >
+                <div className="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse" />
+              </div>
+            </div>
+          </div>
+
+          {/* Loading text */}
+          <p className="text-sm text-gray-400 animate-pulse">
+            {loadingProgress < 30 && '📜 Generowanie lochów...'}
+            {loadingProgress >= 30 && loadingProgress < 60 && '⚔️ Przygotowywanie wrogów...'}
+            {loadingProgress >= 60 && loadingProgress < 90 && '🎲 Tasowanie kości...'}
+            {loadingProgress >= 90 && '✨ Prawie gotowe...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!enemy) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white p-2 md:p-4">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-5xl font-bold text-center mb-1 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600">
-          ⚔️ DUNGEON YAHTZEE ⚔️
-        </h1>
-        <p className="text-center text-xl text-yellow-300 mb-1 font-semibold">KRYPTY CHAOSU - EDYCJA ROZSZERZONA</p>
-        <p className="text-center text-sm text-gray-400 mb-6">v2.0 - Artefakty • Bossowie • Efekty Statusu</p>
-
-        {/* Enhanced Status Bar */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-4 mb-4 border-2 border-purple-500">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="flex items-center gap-2">
-              <Heart className="w-6 h-6 text-red-500" />
-              <div>
-                <div className="text-xs text-gray-400">HP</div>
-                <div className="font-bold text-lg text-red-400">{hp}/{maxHp}</div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-red-500 h-2 rounded-full transition-all" style={{width: `${(hp/maxHp)*100}%`}}></div>
+        {/* Compact Top Bar */}
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-3 mb-3 border-2 border-purple-500 shadow-lg">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
+            <div className="flex items-center gap-1">
+              <Heart className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xs text-red-400 font-bold">{hp}/{maxHp}</div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-red-500 h-1.5 rounded-full transition-all" style={{width: `${(hp/maxHp)*100}%`}}></div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-6 h-6 text-blue-500" />
-              <div>
-                <div className="text-xs text-gray-400">Mana</div>
-                <div className="font-bold text-lg text-blue-400">{mana}/{maxMana}</div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full transition-all" style={{width: `${(mana/maxMana)*100}%`}}></div>
+            <div className="flex items-center gap-1">
+              <Zap className="w-5 h-5 text-blue-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xs text-blue-400 font-bold">{mana}/{maxMana}</div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{width: `${(mana/maxMana)*100}%`}}></div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-6 h-6 text-cyan-500" />
-              <div>
-                <div className="text-xs text-gray-400">Tarcza</div>
-                <div className="font-bold text-lg text-cyan-400">{shield}</div>
-              </div>
+            <div className="flex items-center gap-1">
+              <Shield className="w-5 h-5 text-cyan-500 flex-shrink-0" />
+              <div className="text-xs text-cyan-400 font-bold">{shield}</div>
             </div>
-            <div className="flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-              <div>
-                <div className="text-xs text-gray-400">Poziom {level}</div>
-                <div className="font-bold text-sm text-yellow-400">Piętro {floor}/15</div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-yellow-500 h-2 rounded-full transition-all" style={{width: `${(xp % (level*50))/(level*50)*100}%`}}></div>
+            <div className="flex items-center gap-1">
+              <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xs text-yellow-400 font-bold">Lvl {level} • {floor}/15</div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-yellow-500 h-1.5 rounded-full transition-all" style={{width: `${(xp % (level*50))/(level*50)*100}%`}}></div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-yellow-500" />
-              <div>
-                <div className="text-xs text-gray-400">Złoto</div>
-                <div className="font-bold text-lg text-yellow-300">{gold}</div>
-              </div>
+            <div className="flex items-center gap-1 col-span-2 md:col-span-1">
+              <Sparkles className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+              <div className="text-xs text-yellow-300 font-bold">{gold} 💰</div>
+            </div>
+            <div className="flex items-center gap-1 col-span-3 md:col-span-1">
+              <Skull className="w-5 h-5 text-purple-400 flex-shrink-0" />
+              <div className="text-xs text-purple-300 font-bold">Artefakty: {artifacts.length}</div>
             </div>
           </div>
           
-          {/* Status Effects */}
-          {(statusEffects.burning > 0 || statusEffects.frozen || statusEffects.blessed > 0) && (
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {statusEffects.burning > 0 && (
-                <div className="bg-orange-600 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  <Flame className="w-4 h-4" /> Płonie ({statusEffects.burning} DMG)
-                </div>
-              )}
-              {statusEffects.frozen && (
-                <div className="bg-blue-600 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  <Droplet className="w-4 h-4" /> Zamrożony
-                </div>
-              )}
-              {statusEffects.blessed > 0 && (
-                <div className="bg-yellow-600 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                  <Sparkles className="w-4 h-4" /> Błogosławiony ({statusEffects.blessed})
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Artifacts Display */}
-        {artifacts.length > 0 && (
-          <div className="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-lg p-3 mb-4 border border-purple-400">
-            <div className="text-sm font-bold mb-2 text-purple-300">🎁 Artefakty:</div>
-            <div className="flex gap-2 flex-wrap">
-              {artifacts.map((art, i) => (
-                <div key={i} className="bg-black bg-opacity-40 px-3 py-1 rounded-lg text-sm border border-purple-400">
-                  {art.icon} {art.name}
-                </div>
-              ))}
-            </div>
+          {/* Status Effects & Artifacts Row */}
+          <div className="flex gap-2 flex-wrap items-center">
+            {/* Status Effects */}
+            {statusEffects.burning > 0 && (
+              <div className="bg-orange-600 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
+                <Flame className="w-3 h-3" /> {statusEffects.burning} DMG
+              </div>
+            )}
+            {statusEffects.frozen && (
+              <div className="bg-blue-600 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
+                <Droplet className="w-3 h-3" /> Zamrożony
+              </div>
+            )}
+            {statusEffects.blessed > 0 && (
+              <div className="bg-yellow-600 px-2 py-0.5 rounded-full text-xs flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> +30% ({statusEffects.blessed})
+              </div>
+            )}
+            
+            {/* Artifacts with tooltips */}
+            {artifacts.length > 0 && (
+              <>
+                {artifacts.map((art, i) => (
+                  <div 
+                    key={i} 
+                    className="group relative bg-purple-900 bg-opacity-60 px-2 py-0.5 rounded-full text-xs border border-purple-400 cursor-help hover:bg-purple-800 transition-all"
+                  >
+                    <span>{art.icon}</span>
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                      <div className="bg-gray-900 border-2 border-purple-400 rounded-lg p-2 shadow-xl whitespace-nowrap">
+                        <div className="text-purple-300 font-bold text-sm">{art.icon} {art.name}</div>
+                        <div className="text-gray-300 text-xs mt-1">{art.desc}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Enhanced Enemy */}
         {!gameOver && !victory && (
-          <div className={`rounded-lg p-5 mb-4 text-center border-4 transition-all ${
+          <div className={`rounded-lg p-4 mb-3 text-center border-3 transition-all ${
             bossFloor 
               ? 'bg-gradient-to-br from-red-900 via-purple-900 to-black border-yellow-500 shadow-lg shadow-red-500' 
               : 'bg-gradient-to-br from-red-800 to-gray-900 border-red-600'
           }`}>
-            <div className="text-7xl mb-3">{enemy.icon}</div>
-            <div className={`text-3xl font-bold mb-2 ${bossFloor ? 'text-yellow-300' : 'text-red-300'}`}>
-              {bossFloor && '👑 '}{enemy.name}{bossFloor && ' 👑'}
-            </div>
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Heart className="w-6 h-6 text-red-400" />
-              <div className="text-2xl font-bold">{enemy.currentHp}/{enemy.hp}</div>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-4 mb-3 border-2 border-gray-600">
-              <div className="bg-gradient-to-r from-red-600 to-red-400 h-full rounded-full transition-all" style={{width: `${(enemy.currentHp/enemy.hp)*100}%`}}></div>
-            </div>
-            <div className="flex items-center justify-center gap-4 text-orange-300">
-              <div className="flex items-center gap-1">
-                <Sword className="w-5 h-5" />
-                <span className="font-semibold">{enemy.dmg} DMG</span>
-              </div>
-              {enemy.special && (
-                <div className="bg-purple-800 px-3 py-1 rounded-full text-sm">
-                  ⚡ {enemy.special.toUpperCase()}
+            <div className="flex items-center justify-center gap-4">
+              <div className="text-5xl">{enemy.icon}</div>
+              <div className="flex-1 text-left">
+                <div className={`text-2xl font-bold mb-1 ${bossFloor ? 'text-yellow-300' : 'text-red-300'}`}>
+                  {bossFloor && '👑 '}{enemy.name}{bossFloor && ' 👑'}
                 </div>
-              )}
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-5 h-5 text-red-400" />
+                  <div className="text-xl font-bold">{enemy.currentHp}/{enemy.hp}</div>
+                  <div className="flex-1 bg-gray-700 rounded-full h-3 border border-gray-600 max-w-xs">
+                    <div className="bg-gradient-to-r from-red-600 to-red-400 h-full rounded-full transition-all" style={{width: `${(enemy.currentHp/enemy.hp)*100}%`}}></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-orange-300">
+                  <div className="flex items-center gap-1">
+                    <Sword className="w-4 h-4" />
+                    <span className="font-semibold text-sm">{enemy.dmg} DMG</span>
+                  </div>
+                  {enemy.special && (
+                    <div className="bg-purple-800 px-2 py-1 rounded-full text-xs">
+                      ⚡ {enemy.special.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Message with animation */}
-        <div className={`rounded-lg p-4 mb-4 text-center font-semibold text-lg border-2 transition-all ${
+        <div className={`rounded-lg p-2 mb-3 text-center font-semibold text-base border transition-all ${
           criticalHit 
             ? 'bg-yellow-600 border-yellow-400 animate-pulse' 
             : 'bg-gradient-to-r from-blue-900 to-purple-900 border-blue-500'
@@ -513,12 +600,11 @@ const DungeonYahtzee = () => {
 
         {/* Combat History */}
         {comboHistory.length > 0 && !gameOver && !victory && (
-          <div className="bg-gray-800 bg-opacity-50 rounded-lg p-2 mb-4">
-            <div className="text-xs text-gray-400 mb-1">Historia ataków:</div>
-            <div className="flex gap-2 flex-wrap">
+          <div className="bg-gray-800 bg-opacity-50 rounded-lg p-2 mb-3">
+            <div className="flex gap-1 flex-wrap">
               {comboHistory.map((combo, i) => (
-                <div key={i} className={`px-2 py-1 rounded text-sm ${combo.crit ? 'bg-yellow-600' : 'bg-gray-700'}`}>
-                  {combo.crit && '💥'} {combo.name}: {combo.dmg} DMG
+                <div key={i} className={`px-2 py-0.5 rounded text-xs ${combo.crit ? 'bg-yellow-600' : 'bg-gray-700'}`}>
+                  {combo.crit && '💥'} {combo.name}: {combo.dmg}
                 </div>
               ))}
             </div>
@@ -562,13 +648,13 @@ const DungeonYahtzee = () => {
         {/* Dice */}
         {!gameOver && !victory && (
           <>
-            <div className="flex justify-center gap-3 mb-4">
+            <div className="flex justify-center gap-2 mb-3">
               {dice.map((d, i) => (
                 <button
                   key={i}
                   onClick={() => toggleHold(i)}
                   disabled={rollsLeft === 3 || combatPhase !== 'rolling'}
-                  className={`w-20 h-20 text-4xl font-bold rounded-xl transition-all shadow-lg ${
+                  className={`w-16 h-16 md:w-20 md:h-20 text-3xl md:text-4xl font-bold rounded-xl transition-all shadow-lg ${
                     held[i]
                       ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-black transform scale-110 rotate-6 shadow-yellow-500'
                       : 'bg-gradient-to-br from-white to-gray-200 text-black hover:scale-105'
@@ -579,11 +665,11 @@ const DungeonYahtzee = () => {
               ))}
             </div>
 
-            <div className="text-center mb-4">
+            <div className="text-center mb-3">
               <button
                 onClick={rollDice}
                 disabled={rollsLeft <= 0 || combatPhase !== 'rolling'}
-                className={`px-10 py-4 rounded-xl font-bold text-xl shadow-lg transition-all ${
+                className={`px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition-all ${
                   rollsLeft <= 0 || combatPhase !== 'rolling'
                     ? 'bg-gray-600 cursor-not-allowed'
                     : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105'
@@ -595,8 +681,8 @@ const DungeonYahtzee = () => {
 
             {/* Enhanced Combos */}
             {rollsLeft < 3 && combatPhase === 'rolling' && (
-              <div className="bg-gray-900 bg-opacity-80 rounded-lg p-4 mb-4 border-2 border-purple-500">
-                <div className="text-xl font-bold mb-3 text-center text-purple-300">⚔️ WYBIERZ ATAK ⚔️</div>
+              <div className="bg-gray-900 bg-opacity-80 rounded-lg p-3 mb-3 border-2 border-purple-500">
+                <div className="text-lg font-bold mb-2 text-center text-purple-300">⚔️ WYBIERZ ATAK ⚔️</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {Object.entries(combos).map(([name, data]) => {
                     const canUse = data.dmg > 0 && data.mana <= mana;
@@ -605,7 +691,7 @@ const DungeonYahtzee = () => {
                         key={name}
                         onClick={() => attack(name, data)}
                         disabled={!canUse}
-                        className={`p-3 rounded-lg font-semibold transition-all ${
+                        className={`p-2 rounded-lg font-semibold transition-all ${
                           !canUse
                             ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
                             : data.dmg >= 40
@@ -616,9 +702,9 @@ const DungeonYahtzee = () => {
                         }`}
                       >
                         <div className="text-xs opacity-80">{name}</div>
-                        <div className="text-2xl font-bold">⚔️ {data.dmg}</div>
+                        <div className="text-xl font-bold">⚔️ {data.dmg}</div>
                         {data.mana > 0 && (
-                          <div className="text-xs text-blue-300">💙 {data.mana} many</div>
+                          <div className="text-xs text-blue-300">💙 {data.mana}</div>
                         )}
                       </button>
                     );
@@ -628,63 +714,63 @@ const DungeonYahtzee = () => {
             )}
 
             {/* Enhanced Shop */}
-            <div className="bg-gradient-to-br from-yellow-900 via-orange-900 to-red-900 rounded-lg p-4 border-2 border-yellow-600">
-              <div className="text-2xl font-bold mb-3 text-yellow-300 text-center">🏪 SKLEP KUPCA 🏪</div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-gradient-to-br from-yellow-900 via-orange-900 to-red-900 rounded-lg p-3 border-2 border-yellow-600">
+              <div className="text-lg font-bold mb-2 text-yellow-300 text-center">🏪 SKLEP KUPCA</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <button
                   onClick={usePotion}
                   disabled={gold < 25 || hp >= maxHp}
-                  className={`p-3 rounded-lg font-semibold transition-all ${
+                  className={`p-2 rounded-lg font-semibold transition-all ${
                     gold < 25 || hp >= maxHp
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-br from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 transform hover:scale-105'
                   }`}
                 >
-                  <div className="text-3xl mb-1">💖</div>
+                  <div className="text-2xl mb-1">💖</div>
                   <div className="text-sm">Eliksir Życia</div>
-                  <div className="text-xs text-yellow-300">25 złota</div>
+                  <div className="text-xs text-yellow-300">25 💰</div>
                   <div className="text-xs opacity-80">+30 HP</div>
                 </button>
                 <button
                   onClick={buyManaPotion}
                   disabled={gold < 15 || mana >= maxMana}
-                  className={`p-3 rounded-lg font-semibold transition-all ${
+                  className={`p-2 rounded-lg font-semibold transition-all ${
                     gold < 15 || mana >= maxMana
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 transform hover:scale-105'
                   }`}
                 >
-                  <div className="text-3xl mb-1">💙</div>
+                  <div className="text-2xl mb-1">💙</div>
                   <div className="text-sm">Eliksir Many</div>
-                  <div className="text-xs text-yellow-300">15 złota</div>
+                  <div className="text-xs text-yellow-300">15 💰</div>
                   <div className="text-xs opacity-80">+20 Many</div>
                 </button>
                 <button
                   onClick={buyShield}
                   disabled={gold < 20}
-                  className={`p-3 rounded-lg font-semibold transition-all ${
+                  className={`p-2 rounded-lg font-semibold transition-all ${
                     gold < 20
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-br from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 transform hover:scale-105'
                   }`}
                 >
-                  <div className="text-3xl mb-1">🛡️</div>
-                  <div className="text-sm">Magiczna Tarcza</div>
-                  <div className="text-xs text-yellow-300">20 złota</div>
+                  <div className="text-2xl mb-1">🛡️</div>
+                  <div className="text-sm">Tarcza</div>
+                  <div className="text-xs text-yellow-300">20 💰</div>
                   <div className="text-xs opacity-80">+15 Obrony</div>
                 </button>
                 <button
                   onClick={buyBlessing}
                   disabled={gold < 40}
-                  className={`p-3 rounded-lg font-semibold transition-all ${
+                  className={`p-2 rounded-lg font-semibold transition-all ${
                     gold < 40
                       ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-br from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 transform hover:scale-105'
                   }`}
                 >
-                  <div className="text-3xl mb-1">✨</div>
+                  <div className="text-2xl mb-1">✨</div>
                   <div className="text-sm">Błogosławieństwo</div>
-                  <div className="text-xs text-yellow-300">40 złota</div>
+                  <div className="text-xs text-yellow-300">40 💰</div>
                   <div className="text-xs opacity-80">+30% DMG x3</div>
                 </button>
               </div>

@@ -1262,6 +1262,9 @@ const DungeonYahtzee = () => {
             </div>
           )}
         </div>
+        
+        {/* Spacing after expanded stats menu - 10% margin */}
+        {showStats && <div style={{height: '10vh', minHeight: '60px'}}></div>}
 
 
         {/* Special Combo Notifications - BIGGER */}

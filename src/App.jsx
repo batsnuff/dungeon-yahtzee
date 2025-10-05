@@ -12,11 +12,64 @@ const DungeonYahtzee = () => {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showForge, setShowForge] = useState(false);
   const [activeForgeTab, setActiveForgeTab] = useState('enhancement');
+  const [showStats, setShowStats] = useState(false);
   const [diceBuild, setDiceBuild] = useState({
     level: 0,
     enhancement: 0,
     enchantment: 0,
     evolution: 0
+  });
+  
+  // Individual dice enhancement levels (1-6 dice, each can be enhanced to level 25, 50, 75, etc.)
+  const [diceEnhancements, setDiceEnhancements] = useState([0, 0, 0, 0, 0, 0]); // [dice1, dice2, dice3, dice4, dice5, dice6]
+  
+  // Evolution tiers: 0-10 (Stone, Copper, Silver, Gold, Platinum, Diamond, Ruby, Emerald, Sapphire, Obsidian, Void)
+  const [evolutionTier, setEvolutionTier] = useState(0);
+  
+  // Evolution bonuses (6 different bonuses)
+  const [evolutionBonuses, setEvolutionBonuses] = useState({
+    critical: 0,      // Critical hit chance
+    resistance: 0,    // Damage reduction
+    regeneration: 0,   // HP/Mana regen
+    luck: 0,          // Gold/XP bonus
+    power: 0,         // Damage bonus
+    defense: 0        // Shield bonus
+  });
+  
+  // Enchantment Skills System
+  const [enchantmentSkills, setEnchantmentSkills] = useState({
+    extraRoll: 0,        // 4 Szansa - extra roll
+    reroll: 0,           // Powtórzenie rzutu
+    multiplier: 0,       // Mnożnik damage
+    bonusDmg: 0,         // Dodatkowy DMG
+    bonusExp: 0,         // Bonus EXP
+    bonusGold: 0,        // Bonus Gold
+    shield: 0,           // Tarcza
+    regeneration: 0,     // Regeneracja HP
+    critical: 0,         // Krytyk
+    lifesteal: 0,        // Lifesteal
+    freeze: 0,           // Zamrożenie
+    burn: 0,             // Podpalenie
+    blessing: 0,         // Błogosławieństwo
+    curse: 0,            // Przekleństwo
+    teleport: 0,         // Teleport
+    vision: 0,           // Widzenie
+    speed: 0,            // Szybkość
+    endurance: 0         // Wytrzymałość
+  });
+  
+  // Active skill effects
+  const [activeEffects, setActiveEffects] = useState({
+    extraRolls: 0,       // Current extra rolls available
+    multiplier: 0,       // Damage multiplier turns left
+    shield: 0,           // Shield turns left
+    regeneration: 0,     // Regen turns left
+    freeze: 0,           // Freeze turns left
+    burn: 0,             // Burn turns left
+    blessing: 0,         // Blessing turns left
+    curse: 0,            // Curse turns left
+    speed: 0,            // Speed turns left
+    endurance: 0         // Endurance turns left
   });
   const [collectedDice, setCollectedDice] = useState([0, 0, 0, 0, 0, 0]); // [1,2,3,4,5,6] kostki
   const [shopDice, setShopDice] = useState(0); // 1 losowa kostka w sklepie
@@ -48,16 +101,16 @@ const DungeonYahtzee = () => {
   const [showNameInput, setShowNameInput] = useState(false);
 
   const enemies = [
-    { name: 'Goblin Zwiadowca', hp: 18, dmg: 4, reward: 12, xp: 10, icon: '👺', special: null },
-    { name: 'Szkielet Łucznik', hp: 22, dmg: 5, reward: 18, xp: 15, icon: '💀', special: 'pierce' },
-    { name: 'Ork Barbarzyńca', hp: 30, dmg: 7, reward: 25, xp: 20, icon: '👹', special: 'rage' },
-    { name: 'Mroczny Mag', hp: 28, dmg: 6, reward: 30, xp: 25, icon: '🧙', special: 'curse' },
-    { name: 'Troll Regenerujący', hp: 40, dmg: 8, reward: 35, xp: 30, icon: '🧌', special: 'regen' },
-    { name: 'Wampir', hp: 35, dmg: 9, reward: 40, xp: 35, icon: '🧛', special: 'lifesteal' },
-    { name: 'Demon Ognia', hp: 45, dmg: 10, reward: 50, xp: 40, icon: '👿', special: 'burn' },
-    { name: 'Smok Lodu', hp: 60, dmg: 12, reward: 80, xp: 60, icon: '🐉', special: 'freeze' },
-    { name: 'Nieumarły Rycerz', hp: 70, dmg: 14, reward: 100, xp: 80, icon: '⚔️', special: 'armor' },
-    { name: 'WŁADCA LOCHÓW', hp: 120, dmg: 18, reward: 500, xp: 200, icon: '👑', special: 'boss' }
+    { name: 'Goblin Zwiadowca', hp: 18, dmg: 4, reward: 30, xp: 10, icon: '👺', special: null },
+    { name: 'Szkielet Łucznik', hp: 22, dmg: 5, reward: 45, xp: 15, icon: '💀', special: 'pierce' },
+    { name: 'Ork Barbarzyńca', hp: 30, dmg: 7, reward: 63, xp: 20, icon: '👹', special: 'rage' },
+    { name: 'Mroczny Mag', hp: 28, dmg: 6, reward: 75, xp: 25, icon: '🧙', special: 'curse' },
+    { name: 'Troll Regenerujący', hp: 40, dmg: 8, reward: 88, xp: 30, icon: '🧌', special: 'regen' },
+    { name: 'Wampir', hp: 35, dmg: 9, reward: 100, xp: 35, icon: '🧛', special: 'lifesteal' },
+    { name: 'Demon Ognia', hp: 45, dmg: 10, reward: 125, xp: 40, icon: '👿', special: 'burn' },
+    { name: 'Smok Lodu', hp: 60, dmg: 12, reward: 200, xp: 60, icon: '🐉', special: 'freeze' },
+    { name: 'Nieumarły Rycerz', hp: 70, dmg: 14, reward: 250, xp: 80, icon: '⚔️', special: 'armor' },
+    { name: 'WŁADCA LOCHÓW', hp: 120, dmg: 18, reward: 1250, xp: 200, icon: '👑', special: 'boss' }
   ];
 
   const artifactsList = [
@@ -281,6 +334,11 @@ const DungeonYahtzee = () => {
         setArtifacts(data.artifacts || []);
         setDice(data.dice || [1, 2, 3, 4, 5]);
         setRollsLeft(data.rollsLeft || 3);
+        setDiceEnhancements(data.diceEnhancements || [0, 0, 0, 0, 0, 0]);
+        setEvolutionTier(data.evolutionTier || 0);
+        setEvolutionBonuses(data.evolutionBonuses || { critical: 0, resistance: 0, regeneration: 0, luck: 0, power: 0, defense: 0 });
+        setEnchantmentSkills(data.enchantmentSkills || { extraRoll: 0, reroll: 0, multiplier: 0, bonusDmg: 0, bonusExp: 0, bonusGold: 0, shield: 0, regeneration: 0, critical: 0, lifesteal: 0, freeze: 0, burn: 0, blessing: 0, curse: 0, teleport: 0, vision: 0, speed: 0, endurance: 0 });
+        setActiveEffects(data.activeEffects || { extraRolls: 0, multiplier: 0, shield: 0, regeneration: 0, freeze: 0, burn: 0, blessing: 0, curse: 0, speed: 0, endurance: 0 });
       } catch (e) {
         console.error('Failed to load saved game', e);
       }
@@ -547,9 +605,9 @@ const DungeonYahtzee = () => {
       setStatusEffects({...statusEffects, burning: Math.max(0, statusEffects.burning - 2)});
     }
     
-    // Blessed bonus - 50%
+    // Blessed bonus - 2.5x
     if (statusEffects.blessed > 0) {
-      finalDmg = Math.floor(finalDmg * 1.5);
+      finalDmg = Math.floor(finalDmg * 2.5);
       setStatusEffects({...statusEffects, blessed: statusEffects.blessed - 1});
     }
     
@@ -559,7 +617,7 @@ const DungeonYahtzee = () => {
     
     setTimeout(() => {
       if (newEnemyHp <= 0) {
-        const lootGold = enemy.reward + Math.floor(Math.random() * 10);
+        const lootGold = enemy.reward + Math.floor(Math.random() * 25);
         setGold(gold + lootGold);
         setXp(xp + enemy.xp);
         
@@ -708,7 +766,134 @@ const DungeonYahtzee = () => {
     if (gold >= 40) {
       setGold(gold - 40);
       setStatusEffects({...statusEffects, blessed: 3});
-      setMessage('✨ Błogosławieństwo! +50% DMG przez 3 tury!');
+      setMessage('✨ Błogosławieństwo! x2.5 DMG przez 3 tury!');
+    }
+  };
+
+  // Dice Enhancement System
+  const enhanceDice = (diceIndex) => {
+    const currentLevel = diceEnhancements[diceIndex];
+    const nextLevel = Math.ceil((currentLevel + 1) / 25) * 25; // 25, 50, 75, 100, 125, 150...
+    const cost = nextLevel * 2; // Very cheap: 50, 100, 150, 200, 250, 300...
+    
+    if (gold >= cost) {
+      setGold(gold - cost);
+      const newEnhancements = [...diceEnhancements];
+      newEnhancements[diceIndex] = nextLevel;
+      setDiceEnhancements(newEnhancements);
+      setMessage(`🎲 Kostka ${diceIndex + 1} wzmocniona do poziomu ${nextLevel}!`);
+    }
+  };
+
+  // Evolution System
+  const evolveDice = () => {
+    const evolutionCosts = [100, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+    const cost = evolutionCosts[evolutionTier];
+    
+    if (gold >= cost && evolutionTier < 10) {
+      setGold(gold - cost);
+      setEvolutionTier(evolutionTier + 1);
+      
+      // Random bonus selection
+      const bonusTypes = ['critical', 'resistance', 'regeneration', 'luck', 'power', 'defense'];
+      const randomBonus = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+      
+      setEvolutionBonuses(prev => ({
+        ...prev,
+        [randomBonus]: prev[randomBonus] + 1
+      }));
+      
+      const tierNames = ['Kamień', 'Miedź', 'Srebro', 'Złoto', 'Platyna', 'Diament', 'Rubin', 'Szmaragd', 'Szafir', 'Obsydian', 'Void'];
+      setMessage(`✨ Ewolucja do ${tierNames[evolutionTier + 1]}! Bonus: ${randomBonus}!`);
+    }
+  };
+
+  // Enchantment Skills System
+  const upgradeSkill = (skillName) => {
+    const skillCosts = {
+      extraRoll: 50, reroll: 30, multiplier: 40, bonusDmg: 25, bonusExp: 35, bonusGold: 35,
+      shield: 30, regeneration: 40, critical: 45, lifesteal: 50, freeze: 35, burn: 30,
+      blessing: 40, curse: 35, teleport: 60, vision: 20, speed: 50, endurance: 45
+    };
+    
+    const cost = skillCosts[skillName] * (enchantmentSkills[skillName] + 1);
+    
+    if (gold >= cost) {
+      setGold(gold - cost);
+      setEnchantmentSkills(prev => ({
+        ...prev,
+        [skillName]: prev[skillName] + 1
+      }));
+      setMessage(`✨ Umiejętność ${skillName} ulepszona do poziomu ${enchantmentSkills[skillName] + 1}!`);
+    }
+  };
+
+  const useSkill = (skillName) => {
+    const manaCosts = {
+      extraRoll: 5, reroll: 3, multiplier: 8, bonusDmg: 0, bonusExp: 0, bonusGold: 0,
+      shield: 6, regeneration: 7, critical: 0, lifesteal: 0, freeze: 4, burn: 3,
+      blessing: 5, curse: 4, teleport: 10, vision: 2, speed: 8, endurance: 6
+    };
+    
+    const manaCost = manaCosts[skillName];
+    
+    if (mana >= manaCost) {
+      setMana(mana - manaCost);
+      
+      switch(skillName) {
+        case 'extraRoll':
+          setActiveEffects(prev => ({...prev, extraRolls: prev.extraRolls + 1}));
+          setRollsLeft(rollsLeft + 1);
+          setMessage('🎲 Dodatkowy rzut!');
+          break;
+        case 'reroll':
+          setMessage('🎲 Możesz ponownie rzucić jedną kostkę!');
+          break;
+        case 'multiplier':
+          setActiveEffects(prev => ({...prev, multiplier: 3}));
+          setMessage('⚡ Mnożnik damage x2 przez 3 tury!');
+          break;
+        case 'shield':
+          setActiveEffects(prev => ({...prev, shield: 5}));
+          setShield(shield + 10);
+          setMessage('🛡️ Tarcza +10 na 5 tur!');
+          break;
+        case 'regeneration':
+          setActiveEffects(prev => ({...prev, regeneration: 5}));
+          setMessage('💚 Regeneracja +5 HP/turę przez 5 tur!');
+          break;
+        case 'freeze':
+          setActiveEffects(prev => ({...prev, freeze: 1}));
+          setMessage('❄️ Potwór zamrożony na 1 turę!');
+          break;
+        case 'burn':
+          setActiveEffects(prev => ({...prev, burn: 3}));
+          setMessage('🔥 Potwór podpalony na 3 tury!');
+          break;
+        case 'blessing':
+          setActiveEffects(prev => ({...prev, blessing: 3}));
+          setMessage('✨ Błogosławieństwo +1 do wszystkich kostek!');
+          break;
+        case 'curse':
+          setActiveEffects(prev => ({...prev, curse: 3}));
+          setMessage('💀 Przekleństwo -2 damage potwora!');
+          break;
+        case 'teleport':
+          setMessage('🌀 Teleportacja! Uciekasz z walki!');
+          setTimeout(() => spawnEnemy(), 1000);
+          break;
+        case 'vision':
+          setMessage('👁️ Widzenie! HP potwora: ' + enemy.currentHp + '/' + enemy.hp);
+          break;
+        case 'speed':
+          setActiveEffects(prev => ({...prev, speed: 3}));
+          setMessage('⚡ Szybkość x2 przez 3 tury!');
+          break;
+        case 'endurance':
+          setActiveEffects(prev => ({...prev, endurance: 3}));
+          setMessage('💪 Wytrzymałość -50% damage przez 3 tury!');
+          break;
+      }
     }
   };
 
@@ -737,7 +922,7 @@ const DungeonYahtzee = () => {
   const saveGame = () => {
     const gameState = {
       dice, held, rollsLeft, hp, maxHp, shield, mana, maxMana, floor, gold, xp, level,
-      artifacts, statusEffects, eliteKills, diceBuild, collectedDice, shopDice,
+      artifacts, statusEffects, eliteKills, diceBuild, collectedDice, shopDice, diceEnhancements, evolutionTier, evolutionBonuses, enchantmentSkills, activeEffects,
       playerName: playerName || 'ANON'
     };
     localStorage.setItem('dungeon-yahtzee-save', JSON.stringify(gameState));
@@ -786,6 +971,11 @@ const DungeonYahtzee = () => {
     });
     setCollectedDice([0, 0, 0, 0, 0, 0]);
     setShopDice(0);
+    setDiceEnhancements([0, 0, 0, 0, 0, 0]);
+    setEvolutionTier(0);
+    setEvolutionBonuses({ critical: 0, resistance: 0, regeneration: 0, luck: 0, power: 0, defense: 0 });
+    setEnchantmentSkills({ extraRoll: 0, reroll: 0, multiplier: 0, bonusDmg: 0, bonusExp: 0, bonusGold: 0, shield: 0, regeneration: 0, critical: 0, lifesteal: 0, freeze: 0, burn: 0, blessing: 0, curse: 0, teleport: 0, vision: 0, speed: 0, endurance: 0 });
+    setActiveEffects({ extraRolls: 0, multiplier: 0, shield: 0, regeneration: 0, freeze: 0, burn: 0, blessing: 0, curse: 0, speed: 0, endurance: 0 });
     setSpecialCombo('');
     localStorage.removeItem('dungeon-yahtzee-save');
     setTimeout(() => spawnEnemy(), 100);
@@ -938,89 +1128,139 @@ const DungeonYahtzee = () => {
       }} />
       
       <div className="max-w-5xl mx-auto relative z-10">
-        {/* Compact Top Bar - Cyberpunk Style */}
-        <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-green-500 shadow-[0_0_30px_rgba(0,255,150,0.3)]">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
-            <div className="flex items-center gap-1">
-              <Heart className="w-5 h-5 text-pink-500 flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
-              <div className="min-w-0">
-                <div className="text-xs text-pink-400 font-bold">{hp}/{maxHp}</div>
-                <div className="w-full bg-gray-900 rounded-full h-1.5 border border-pink-500">
-                  <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(255,0,255,0.5)]" style={{width: `${(hp/maxHp)*100}%`}}></div>
+        {/* Collapsible Stats Menu - Cyberpunk Style */}
+        <div className="bg-black rounded-lg border-2 border-green-500 shadow-[0_0_30px_rgba(0,255,150,0.3)] mb-3">
+          {/* Main Stats Bar - Always Visible */}
+          <div className="py-4 px-16">
+            <div className="grid grid-cols-4 gap-4 items-center">
+              {/* HP */}
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5 text-pink-500 flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-pink-400 font-bold">{hp}/{maxHp}</div>
+                  <div className="w-full bg-gray-900 rounded-full h-1.5 border border-pink-500">
+                    <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(255,0,255,0.5)]" style={{width: `${(hp/maxHp)*100}%`}}></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Zap className="w-5 h-5 text-cyan-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
-              <div className="min-w-0">
-                <div className="text-xs text-cyan-400 font-bold">{mana}/{maxMana}</div>
-                <div className="w-full bg-gray-900 rounded-full h-1.5 border border-cyan-500">
-                  <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,255,255,0.5)]" style={{width: `${(mana/maxMana)*100}%`}}></div>
+              
+              {/* Mana */}
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-cyan-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-cyan-400 font-bold">{mana}/{maxMana}</div>
+                  <div className="w-full bg-gray-900 rounded-full h-1.5 border border-cyan-500">
+                    <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,255,255,0.5)]" style={{width: `${(mana/maxMana)*100}%`}}></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
-              <div className="text-xs text-cyan-300 font-bold">{shield}</div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Trophy className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-xs text-green-400 font-bold">Lvl {level} • Piętro {floor}</div>
-                <div className="w-full bg-gray-900 rounded-full h-1.5 border border-green-500">
-                  <div className="bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,255,150,0.5)]" style={{width: `${(xp % (level*50 + Math.floor(level*level*0.5)))/(level*50 + Math.floor(level*level*0.5))*100}%`}}></div>
+              
+              {/* Level & Floor */}
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-green-400 font-bold">Lvl {level} • Piętro {floor}</div>
+                  <div className="w-full bg-gray-900 rounded-full h-1.5 border border-green-500">
+                    <div className="bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,255,150,0.5)]" style={{width: `${(xp % (level*50 + Math.floor(level*level*0.5)))/(level*50 + Math.floor(level*level*0.5))*100}%`}}></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 flex items-center justify-center text-yellow-400 flex-shrink-0 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">
-                💾
-              </div>
-              <button
-                onClick={saveGame}
-                className="text-[10px] bg-yellow-900 border border-yellow-500 text-yellow-400 hover:bg-yellow-800 px-1.5 py-0.5 rounded transition-all shadow-[0_0_5px_rgba(255,255,0,0.3)] hover:shadow-[0_0_10px_rgba(255,255,0,0.6)]"
-              >
-                ZAPISZ
-              </button>
-            </div>
-            <div className="flex items-center gap-1 col-span-2 md:col-span-1">
-              <Sparkles className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]" />
-              <div className="text-xs text-green-300 font-bold">{gold} 💰</div>
-            </div>
-            <div className="flex items-center gap-1 col-span-3 md:col-span-1">
-              <Skull className="w-5 h-5 text-pink-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
-              <div className="text-xs text-pink-300 font-bold flex gap-1">
-                {artifactsList.filter(art => art.unlocked).map((artifact, i) => (
-                  <span key={i} title={artifact.name} className="text-lg">{artifact.icon}</span>
-                ))}
-                {artifactsList.filter(art => art.unlocked).length === 0 && (
-                  <span className="text-gray-500">Brak artefaktów</span>
-                )}
+              
+              {/* XP, Gold & Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 flex items-center justify-center text-yellow-400 flex-shrink-0 drop-shadow-[0_0_8px_rgba(255,255,0,0.8)]">
+                    ⚡
+                  </div>
+                  <div className="text-xs text-yellow-300 font-bold">{xp}</div>
+                  <Sparkles className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]" />
+                  <div className="text-xs text-green-300 font-bold">{gold} 💰</div>
+                </div>
+                <button
+                  onClick={() => setShowStats(!showStats)}
+                  className="text-xs bg-cyan-900 border border-cyan-500 text-cyan-400 hover:bg-cyan-800 px-2 py-1 rounded transition-all shadow-[0_0_5px_rgba(0,255,255,0.3)] hover:shadow-[0_0_10px_rgba(0,255,255,0.6)]"
+                >
+                  {showStats ? 'ZWIŃ' : 'ROZWIŃ'}
+                </button>
               </div>
             </div>
           </div>
           
-          {/* Status Effects & Artifacts Row */}
-          <div className="flex gap-2 flex-wrap items-center">
-          {/* Status Effects */}
-              {statusEffects.burning > 0 && (
-              <div className="bg-pink-900 border border-pink-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(255,0,255,0.5)]">
-                <Flame className="w-3 h-3 text-pink-400" /> <span className="text-pink-300">{statusEffects.burning} DMG</span>
+          {/* Expanded Stats - Collapsible */}
+          {showStats && (
+            <div className="border-t border-green-500 py-4 px-16 bg-gray-900 bg-opacity-50">
+              {/* Detailed Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {/* Shield */}
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
+                  <div className="text-xs text-cyan-300 font-bold">{shield}</div>
                 </div>
-              )}
-              {statusEffects.frozen && (
-              <div className="bg-cyan-900 border border-cyan-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(0,255,255,0.5)]">
-                <Droplet className="w-3 h-3 text-cyan-400" /> <span className="text-cyan-300">Frozen</span>
+                
+                {/* Elite Kills */}
+                <div className="flex items-center gap-2">
+                  <Skull className="w-5 h-5 text-pink-400 flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
+                  <div className="text-xs text-pink-300 font-bold">{eliteKills} Elite</div>
                 </div>
-              )}
-              {statusEffects.blessed > 0 && (
-              <div className="bg-green-900 border border-green-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(0,255,150,0.5)]">
-                <Sparkles className="w-3 h-3 text-green-400" /> <span className="text-green-300">+50% ({statusEffects.blessed})</span>
+                
+                {/* Rolls Left */}
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 flex items-center justify-center text-purple-400 flex-shrink-0 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]">
+                    🎲
+                  </div>
+                  <div className="text-xs text-purple-300 font-bold">{rollsLeft}/3 Rzuty</div>
                 </div>
-              )}
-
+              </div>
+              
+              {/* Status Effects */}
+              <div className="flex gap-2 flex-wrap items-center mb-4">
+                {statusEffects.burning > 0 && (
+                  <div className="bg-pink-900 border border-pink-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(255,0,255,0.5)]">
+                    <Flame className="w-3 h-3 text-pink-400" /> <span className="text-pink-300">{statusEffects.burning} DMG</span>
+                  </div>
+                )}
+                {statusEffects.frozen && (
+                  <div className="bg-cyan-900 border border-cyan-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(0,255,255,0.5)]">
+                    <Droplet className="w-3 h-3 text-cyan-400" /> <span className="text-cyan-300">Frozen</span>
+                  </div>
+                )}
+                {statusEffects.blessed > 0 && (
+                  <div className="bg-green-900 border border-green-500 px-2 py-0.5 rounded-full text-xs flex items-center gap-1 shadow-[0_0_10px_rgba(0,255,150,0.5)]">
+                    <Sparkles className="w-3 h-3 text-green-400" /> <span className="text-green-300">x2.5 ({statusEffects.blessed})</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Artifacts & Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Artifacts */}
+                <div>
+                  <div className="text-xs text-pink-400 font-bold mb-2 flex items-center gap-1">
+                    <Skull className="w-4 h-4" />
+                    ARTEFAKTY ({artifactsList.filter(art => art.unlocked).length})
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {artifactsList.filter(art => art.unlocked).map((artifact, i) => (
+                      <span key={i} title={artifact.name} className="text-lg">{artifact.icon}</span>
+                    ))}
+                    {artifactsList.filter(art => art.unlocked).length === 0 && (
+                      <span className="text-gray-500 text-xs">Brak artefaktów</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveGame}
+                    className="text-xs bg-yellow-900 border border-yellow-500 text-yellow-400 hover:bg-yellow-800 px-2 py-1 rounded transition-all shadow-[0_0_5px_rgba(255,255,0,0.3)] hover:shadow-[0_0_10px_rgba(255,255,0,0.6)]"
+                  >
+                    💾 ZAPISZ
+                  </button>
+                </div>
+              </div>
             </div>
+          )}
         </div>
 
 
@@ -1054,18 +1294,22 @@ const DungeonYahtzee = () => {
         )}
 
 
-        {/* Enhanced Enemy - Cyberpunk */}
+        {/* Combined Enemy Info & Combat History - Cyberpunk */}
         {!gameOver && !victory && (
-          <div className={`rounded-lg py-4 px-16 mb-3 text-center border-2 transition-all mx-auto ${
-            enemy.isElite
-              ? 'bg-black border-green-500 shadow-[0_0_50px_rgba(0,255,150,0.8)]'
-              : bossFloor 
-              ? 'bg-black border-pink-500 shadow-[0_0_40px_rgba(255,0,255,0.6)]' 
-              : 'bg-black border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]'
-          }`} style={{width: 'fit-content', minWidth: '200px', maxWidth: '400px'}}>
-            <div className="text-center">
-              <div className={`text-5xl mb-3 ${bossFloor ? 'drop-shadow-[0_0_20px_rgba(255,0,255,0.8)]' : 'drop-shadow-[0_0_15px_rgba(0,255,255,0.6)]'}`}>{enemy.icon}</div>
-              <div className={`text-2xl font-bold mb-3 ${
+          <div className="flex gap-4 my-3 justify-center items-end" style={{marginTop: '13px', marginBottom: '13px'}}>
+            {/* Enemy Info Section - 80% */}
+            <div className={`rounded-lg py-7 px-16 border-2 transition-all ${
+              enemy.isElite
+                ? 'bg-black border-green-500 shadow-[0_0_50px_rgba(0,255,150,0.8)]'
+                : bossFloor 
+                ? 'bg-black border-pink-500 shadow-[0_0_40px_rgba(255,0,255,0.6)]' 
+                : 'bg-black border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]'
+            }`} style={{width: '60%', minWidth: '400px', maxWidth: '650px'}}>
+            
+            {/* Enemy Info Section */}
+            <div className="text-center mb-4">
+              <div className={`text-6xl mb-4 ${bossFloor ? 'drop-shadow-[0_0_20px_rgba(255,0,255,0.8)]' : 'drop-shadow-[0_0_15px_rgba(0,255,255,0.6)]'}`}>{enemy.icon}</div>
+              <div className={`text-3xl font-bold mb-4 ${
                 enemy.isElite ? 'text-green-400 drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]' :
                 bossFloor ? 'text-pink-400 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]' : 
                 'text-cyan-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]'
@@ -1075,48 +1319,102 @@ const DungeonYahtzee = () => {
                 {enemy.name}
                 {bossFloor && ' ⚡'}
                 {enemy.isElite && ' 💎'}
-            </div>
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <Heart className="w-5 h-5 text-pink-500 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
-                <div className="text-xl font-bold text-pink-400">{enemy.currentHp}/{enemy.hp}</div>
-                <div className="w-32 bg-gray-900 rounded-full h-3 border border-pink-500">
-                  <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-full rounded-full transition-all shadow-[0_0_15px_rgba(255,0,255,0.6)]" style={{width: `${(enemy.currentHp/enemy.hp)*100}%`}}></div>
-            </div>
-            </div>
-              <div className="flex items-center justify-center gap-3">
-              <div className="flex items-center gap-1">
-                  <Sword className="w-4 h-4 text-cyan-400" />
-                  <span className="font-semibold text-sm text-cyan-300">{enemy.dmg} DMG</span>
               </div>
-              {enemy.special && (
-                  <div className="bg-black border border-green-500 px-2 py-1 rounded-full text-xs text-green-400 shadow-[0_0_10px_rgba(0,255,150,0.5)]">
-                  ⚡ {enemy.special.toUpperCase()}
+              
+              {/* Enemy Stats Row */}
+              <div className="flex items-center justify-center gap-6 mb-4">
+                <div className="flex items-center gap-3">
+                  <Heart className="w-6 h-6 text-pink-500 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]" />
+                  <div className="text-xl font-bold text-pink-400">{enemy.currentHp}/{enemy.hp}</div>
+                  <div className="w-32 bg-gray-900 rounded-full h-3 border border-pink-500">
+                    <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-full rounded-full transition-all shadow-[0_0_15px_rgba(255,0,255,0.6)]" style={{width: `${(enemy.currentHp/enemy.hp)*100}%`}}></div>
+                  </div>
                 </div>
-              )}
+                
+                <div className="flex items-center gap-2">
+                  <Sword className="w-5 h-5 text-cyan-400" />
+                  <span className="font-semibold text-base text-cyan-300">{enemy.dmg} DMG</span>
+                </div>
+                
+                {enemy.special && (
+                  <div className="bg-black border border-green-500 px-3 py-2 rounded-full text-sm text-green-400 shadow-[0_0_10px_rgba(0,255,150,0.5)]">
+                    ⚡ {enemy.special.toUpperCase()}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Message with animation - Cyberpunk */}
-        <div className={`rounded-lg py-4 px-16 mb-3 text-center font-semibold text-base border-2 transition-all mx-auto ${
-          criticalHit 
-            ? 'bg-pink-900 border-pink-400 shadow-[0_0_30px_rgba(255,0,255,0.8)] animate-pulse text-pink-200' 
-            : 'bg-black border-green-500 shadow-[0_0_20px_rgba(0,255,150,0.4)] text-green-300'
-        }`} style={{width: 'fit-content', minWidth: '200px', maxWidth: '400px'}}>
-          {criticalHit && '⚡ CRITICAL HIT! ⚡ '}
-          {message}
-        </div>
-
-        {/* Combat History - Cyberpunk */}
-        {comboHistory.length > 0 && !gameOver && !victory && (
-          <div className="bg-black border border-cyan-500 rounded-lg py-4 px-16 mb-3 shadow-[0_0_15px_rgba(0,255,255,0.3)] mx-auto" style={{width: 'fit-content', minWidth: '200px', maxWidth: '400px'}}>
-            <div className="flex gap-1 flex-wrap justify-center">
-              {comboHistory.map((combo, i) => (
-                <div key={i} className={`px-2 py-0.5 rounded text-xs border ${combo.crit ? 'bg-pink-900 border-pink-500 text-pink-300' : 'bg-gray-900 border-cyan-500 text-cyan-300'}`}>
-                  {combo.crit && '⚡'} {combo.name}: {combo.dmg}
+            {/* Combat History Section */}
+            {comboHistory.length > 0 && (
+              <div className="border-t border-gray-600 pt-5">
+                <div className="text-lg font-bold text-cyan-400 mb-4 text-center drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]">
+                  OSTATNIE ATAKI
                 </div>
-              ))}
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {comboHistory.map((combo, i) => (
+                    <div key={i} className={`px-3 py-2 rounded text-sm border ${combo.crit ? 'bg-pink-900 border-pink-500 text-pink-300' : 'bg-gray-900 border-cyan-500 text-cyan-300'}`}>
+                      {combo.crit && '⚡'} {combo.name}: {combo.dmg}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message Section */}
+            {message && (
+              <div className="border-t border-gray-600 pt-5">
+                <div className={`rounded-lg py-4 px-6 text-center font-semibold text-base border-2 transition-all ${
+                  criticalHit 
+                    ? 'bg-pink-900 border-pink-400 shadow-[0_0_20px_rgba(255,0,255,0.6)] animate-pulse text-pink-200' 
+                    : 'bg-gray-800 border-green-500 shadow-[0_0_15px_rgba(0,255,150,0.3)] text-green-300'
+                }`}>
+                  {criticalHit && '⚡ CRITICAL HIT! ⚡ '}
+                  {message}
+                </div>
+              </div>
+            )}
+            </div>
+
+            {/* Roll Dice Section - 40% */}
+            <div className="bg-black rounded-lg py-5 px-10 border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]" style={{width: '40%', minWidth: '300px', maxWidth: '500px'}}>
+              {/* Dice */}
+              <div className="flex justify-center gap-3 mb-6">
+                {dice.map((d, i) => (
+                  <button
+                    key={i}
+                    onClick={() => toggleHold(i)}
+                    disabled={rollsLeft === 3 || combatPhase !== 'rolling' || isRolling}
+                    className={`w-20 h-20 text-4xl font-bold rounded-xl transition-all border-2 ${
+                      held[i]
+                        ? 'bg-black border-green-500 text-green-400 transform scale-110 rotate-6 shadow-[0_0_30px_rgba(0,255,150,0.8)]'
+                        : 'bg-black border-cyan-500 text-cyan-300 hover:scale-105 shadow-[0_0_25px_rgba(0,255,255,0.5)]'
+                    } ${rollsLeft === 3 || combatPhase !== 'rolling' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,255,255,0.8)]'} ${
+                      isRolling && !held[i] ? 'animate-dice-roll' : ''
+                    }`}
+                    style={isRolling && !held[i] ? {
+                      animation: `dice-roll 0.1s infinite, dice-shake 1s ease-in-out, dice-glow 1s ease-in-out`,
+                      animationDelay: `${i * 0.08}s`
+                    } : {}}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+
+              {/* Roll Button */}
+              <div className="text-center">
+                <button
+                  onClick={rollDice}
+                  disabled={rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling}
+                  className={`px-7 py-3 rounded-xl font-bold text-base transition-all border-2 ${
+                    rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling
+                      ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
+                      : 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_30px_rgba(255,0,255,0.5)] hover:shadow-[0_0_40px_rgba(255,0,255,0.8)]'
+                  }`}
+                >
+                  {isRolling ? '>>> ROLLING...' : `>>> ROLL DICE (${rollsLeft}/3) >`}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1216,53 +1514,13 @@ const DungeonYahtzee = () => {
           </div>
         )}
 
-        {/* Dice - Cyberpunk */}
-        {!gameOver && !victory && (
-          <>
-            <div className="flex justify-center gap-2 mb-3">
-              {dice.map((d, i) => (
-                <button
-                  key={i}
-                  onClick={() => toggleHold(i)}
-                  disabled={rollsLeft === 3 || combatPhase !== 'rolling' || isRolling}
-                  className={`w-16 h-16 md:w-20 md:h-20 text-3xl md:text-4xl font-bold rounded-xl transition-all border-2 ${
-                    held[i]
-                      ? 'bg-black border-green-500 text-green-400 transform scale-110 rotate-6 shadow-[0_0_30px_rgba(0,255,150,0.8)]'
-                      : 'bg-black border-cyan-500 text-cyan-300 hover:scale-105 shadow-[0_0_20px_rgba(0,255,255,0.5)]'
-                  } ${rollsLeft === 3 || combatPhase !== 'rolling' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-[0_0_30px_rgba(0,255,255,0.8)]'} ${
-                    isRolling && !held[i] ? 'animate-dice-roll' : ''
-                  }`}
-                  style={isRolling && !held[i] ? {
-                    animation: `dice-roll 0.1s infinite, dice-shake 1s ease-in-out, dice-glow 1s ease-in-out`,
-                    animationDelay: `${i * 0.08}s`
-                  } : {}}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-
-            <div className="text-center mb-3">
-              <button
-                onClick={rollDice}
-                disabled={rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling}
-                className={`px-8 py-3 rounded-xl font-bold text-lg transition-all border-2 ${
-                  rollsLeft <= 0 || combatPhase !== 'rolling' || isRolling
-                    ? 'bg-gray-900 border-gray-600 text-gray-500 cursor-not-allowed'
-                    : 'bg-black border-pink-500 text-pink-400 hover:bg-pink-900 transform hover:scale-105 shadow-[0_0_30px_rgba(255,0,255,0.5)] hover:shadow-[0_0_40px_rgba(255,0,255,0.8)]'
-                }`}
-              >
-                {isRolling ? '>>> ROLLING...' : `>>> ROLL DICE (${rollsLeft}/3) >`}
-              </button>
-            </div>
-
-            {/* Enhanced Combos - Cyberpunk */}
-            {rollsLeft < 3 && combatPhase === 'rolling' && (
+        {/* Enhanced Combos - Cyberpunk */}
+        {!gameOver && !victory && rollsLeft < 3 && combatPhase === 'rolling' && (
               <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-pink-500 shadow-[0_0_30px_rgba(255,0,255,0.4)]">
                 <div className="text-lg font-bold mb-2 text-center text-pink-400 drop-shadow-[0_0_10px_rgba(255,0,255,0.8)]">{'>>> SELECT ATTACK <<<'}</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {Object.entries(combos).map(([name, data]) => {
-                    const canUse = data.dmg > 0 && data.mana <= mana;
+                  {Object.entries(combos).filter(([name, data]) => data.dmg > 0).map(([name, data]) => {
+                    const canUse = data.mana <= mana;
                     return (
                       <button
                         key={name}
@@ -1288,34 +1546,34 @@ const DungeonYahtzee = () => {
                   })}
                 </div>
               </div>
-            )}
+        )}
 
-            {/* Collapsible Main Menu */}
-            <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                <button
-                  onClick={() => setShowArtifacts(!showArtifacts)}
-                  className={`text-lg font-bold text-purple-400 text-center drop-shadow-[0_0_10px_rgba(147,51,234,0.8)] transition-all border-2 border-purple-500 rounded-lg py-2 ${
-                    artifactsList.some(art => art.unlocked) ? 'animate-pulse' : ''
-                  }`}
-                >
-                  {'>>> ARTEFAKTY <<<'}
-                </button>
-                <button
-                  onClick={() => setShowForge(!showForge)}
-                  className="text-lg font-bold text-cyan-400 text-center drop-shadow-[0_0_10px_rgba(0,255,255,0.8)] transition-all border-2 border-cyan-500 rounded-lg py-2"
-                >
-                  {'>>> KUŹNIA CHAOSU <<<'}
-                </button>
-              </div>
-              
-              {/* Shop Section - Hidden in collapsible menu */}
-              <div className="mb-4">
-                <div className="text-lg font-bold mb-2 text-green-400 text-center drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]">CYBER DICE WORLD</div>
-                
+        {/* Main Menu Buttons */}
+        <div className="bg-black rounded-lg py-4 px-16 mb-3 border-2 border-cyan-500 shadow-[0_0_30px_rgba(0,255,255,0.4)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+            <button
+              onClick={() => setShowArtifacts(!showArtifacts)}
+              className={`text-lg font-bold text-purple-400 text-center drop-shadow-[0_0_10px_rgba(147,51,234,0.8)] transition-all border-2 border-purple-500 rounded-lg py-2 ${
+                artifactsList.some(art => art.unlocked) ? 'animate-pulse' : ''
+              }`}
+            >
+              {'>>> ARTEFAKTY <<<'}
+            </button>
+            <button
+              onClick={() => setShowForge(!showForge)}
+              className="text-lg font-bold text-cyan-400 text-center drop-shadow-[0_0_10px_rgba(0,255,255,0.8)] transition-all border-2 border-cyan-500 rounded-lg py-2"
+            >
+              {'>>> KUŹNIA CHAOSU <<<'}
+            </button>
+          </div>
+          
+          {/* Shop Section */}
+          <div className="mb-4">
+            <div className="text-lg font-bold mb-2 text-green-400 text-center drop-shadow-[0_0_10px_rgba(0,255,150,0.8)]">CYBER DICE WORLD</div>
+            
 
-                {/* Traditional Shop Items */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {/* Traditional Shop Items */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <button
                   onClick={usePotion}
                   disabled={gold < 25 || hp >= maxHp}
@@ -1370,7 +1628,7 @@ const DungeonYahtzee = () => {
                     <div className="text-2xl mb-1">✨</div>
                     <div className="text-sm">Power Up</div>
                     <div className="text-xs text-green-300">40 💰</div>
-                    <div className="text-xs opacity-80">+50% DMG x3</div>
+                    <div className="text-xs opacity-80">x2.5 DMG x3</div>
                   </button>
                   <button
                     onClick={buyDice}
@@ -1388,8 +1646,8 @@ const DungeonYahtzee = () => {
                 </button>
               </div>
               </div>
-              
-              {/* Artifacts Section */}
+
+              {/* Artifacts Section - Positioned under Cyber Dice World */}
               {showArtifacts && (
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {artifactsList.map((artifact, index) => (
@@ -1431,7 +1689,7 @@ const DungeonYahtzee = () => {
                 </div>
               )}
 
-              {/* Forge Section */}
+              {/* Forge Section - Positioned under Cyber Dice World */}
               {showForge && (
                 <div className="mt-4">
                   <div className="text-lg font-bold mb-4 text-cyan-400 text-center drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]">
@@ -1497,10 +1755,36 @@ const DungeonYahtzee = () => {
 
                   {/* Tab Content */}
                   {activeForgeTab === 'enhancement' && (
-                    <div className="bg-green-900 border-2 border-green-500 rounded-lg p-4">
-                      <div className="text-green-400 font-bold text-center mb-4">WZMOCNIENIE KOSTEK</div>
-                      <div className="text-center text-gray-300">
-                        Wkrótce dostępne...
+                    <div className="bg-cyan-900 border-2 border-cyan-500 rounded-lg p-4">
+                      <div className="text-cyan-400 font-bold text-center mb-4">WZMOCNIENIE KOSTEK</div>
+                      
+                      {/* Individual Dice Enhancement */}
+                      <div className="mb-4">
+                        <div className="text-cyan-300 font-bold text-center mb-2">WZMOCNIENIE INDYWIDUALNE</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {diceEnhancements.map((level, index) => {
+                            const nextLevel = Math.ceil((level + 1) / 25) * 25;
+                            const cost = nextLevel * 2;
+                            const canEnhance = gold >= cost;
+                            
+                            return (
+                              <button
+                                key={index}
+                                onClick={() => enhanceDice(index)}
+                                disabled={!canEnhance}
+                                className={`p-2 rounded border-2 text-center transition-all ${
+                                  canEnhance
+                                    ? 'bg-cyan-500 border-cyan-300 text-white hover:bg-cyan-600'
+                                    : 'bg-gray-700 border-gray-500 text-gray-400 cursor-not-allowed'
+                                }`}
+                              >
+                                <div className="text-lg">{['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'][index]}</div>
+                                <div className="text-xs">Lv.{level}</div>
+                                <div className="text-xs">{cost}💰</div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1508,8 +1792,152 @@ const DungeonYahtzee = () => {
                   {activeForgeTab === 'enchantment' && (
                     <div className="bg-purple-900 border-2 border-purple-500 rounded-lg p-4">
                       <div className="text-purple-400 font-bold text-center mb-4">ZACZAROWANIE KOSTEK</div>
-                      <div className="text-center text-gray-300">
-                        Wkrótce dostępne...
+                      
+                      {/* Skills Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {/* 4 Szansa */}
+                        <div className="bg-gray-800 border-2 border-purple-400 rounded-lg p-3">
+                          <div className="text-center">
+                            <div className="text-lg mb-1">🎲</div>
+                            <div className="text-sm font-bold text-purple-300">4 Szansa</div>
+                            <div className="text-xs text-gray-400">Lv.{enchantmentSkills.extraRoll}</div>
+                            <div className="text-xs text-yellow-400">{50 * (enchantmentSkills.extraRoll + 1)}💰</div>
+                            <button
+                              onClick={() => upgradeSkill('extraRoll')}
+                              disabled={gold < 50 * (enchantmentSkills.extraRoll + 1)}
+                              className="mt-2 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              ULEPSZ
+                            </button>
+                            <button
+                              onClick={() => useSkill('extraRoll')}
+                              disabled={mana < 5}
+                              className="mt-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              UŻYJ (5💎)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Powtórzenie rzutu */}
+                        <div className="bg-gray-800 border-2 border-purple-400 rounded-lg p-3">
+                          <div className="text-center">
+                            <div className="text-lg mb-1">🔄</div>
+                            <div className="text-sm font-bold text-purple-300">Powtórzenie</div>
+                            <div className="text-xs text-gray-400">Lv.{enchantmentSkills.reroll}</div>
+                            <div className="text-xs text-yellow-400">{30 * (enchantmentSkills.reroll + 1)}💰</div>
+                            <button
+                              onClick={() => upgradeSkill('reroll')}
+                              disabled={gold < 30 * (enchantmentSkills.reroll + 1)}
+                              className="mt-2 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              ULEPSZ
+                            </button>
+                            <button
+                              onClick={() => useSkill('reroll')}
+                              disabled={mana < 3}
+                              className="mt-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              UŻYJ (3💎)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Mnożnik */}
+                        <div className="bg-gray-800 border-2 border-purple-400 rounded-lg p-3">
+                          <div className="text-center">
+                            <div className="text-lg mb-1">⚡</div>
+                            <div className="text-sm font-bold text-purple-300">Mnożnik</div>
+                            <div className="text-xs text-gray-400">Lv.{enchantmentSkills.multiplier}</div>
+                            <div className="text-xs text-yellow-400">{40 * (enchantmentSkills.multiplier + 1)}💰</div>
+                            <button
+                              onClick={() => upgradeSkill('multiplier')}
+                              disabled={gold < 40 * (enchantmentSkills.multiplier + 1)}
+                              className="mt-2 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              ULEPSZ
+                            </button>
+                            <button
+                              onClick={() => useSkill('multiplier')}
+                              disabled={mana < 8}
+                              className="mt-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              UŻYJ (8💎)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Tarcza */}
+                        <div className="bg-gray-800 border-2 border-purple-400 rounded-lg p-3">
+                          <div className="text-center">
+                            <div className="text-lg mb-1">🛡️</div>
+                            <div className="text-sm font-bold text-purple-300">Tarcza</div>
+                            <div className="text-xs text-gray-400">Lv.{enchantmentSkills.shield}</div>
+                            <div className="text-xs text-yellow-400">{30 * (enchantmentSkills.shield + 1)}💰</div>
+                            <button
+                              onClick={() => upgradeSkill('shield')}
+                              disabled={gold < 30 * (enchantmentSkills.shield + 1)}
+                              className="mt-2 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              ULEPSZ
+                            </button>
+                            <button
+                              onClick={() => useSkill('shield')}
+                              disabled={mana < 6}
+                              className="mt-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              UŻYJ (6💎)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Teleport */}
+                        <div className="bg-gray-800 border-2 border-purple-400 rounded-lg p-3">
+                          <div className="text-center">
+                            <div className="text-lg mb-1">🌀</div>
+                            <div className="text-sm font-bold text-purple-300">Teleport</div>
+                            <div className="text-xs text-gray-400">Lv.{enchantmentSkills.teleport}</div>
+                            <div className="text-xs text-yellow-400">{60 * (enchantmentSkills.teleport + 1)}💰</div>
+                            <button
+                              onClick={() => upgradeSkill('teleport')}
+                              disabled={gold < 60 * (enchantmentSkills.teleport + 1)}
+                              className="mt-2 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              ULEPSZ
+                            </button>
+                            <button
+                              onClick={() => useSkill('teleport')}
+                              disabled={mana < 10}
+                              className="mt-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              UŻYJ (10💎)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Widzenie */}
+                        <div className="bg-gray-800 border-2 border-purple-400 rounded-lg p-3">
+                          <div className="text-center">
+                            <div className="text-lg mb-1">👁️</div>
+                            <div className="text-sm font-bold text-purple-300">Widzenie</div>
+                            <div className="text-xs text-gray-400">Lv.{enchantmentSkills.vision}</div>
+                            <div className="text-xs text-yellow-400">{20 * (enchantmentSkills.vision + 1)}💰</div>
+                            <button
+                              onClick={() => upgradeSkill('vision')}
+                              disabled={gold < 20 * (enchantmentSkills.vision + 1)}
+                              className="mt-2 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              ULEPSZ
+                            </button>
+                            <button
+                              onClick={() => useSkill('vision')}
+                              disabled={mana < 2}
+                              className="mt-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                            >
+                              UŻYJ (2💎)
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1518,64 +1946,61 @@ const DungeonYahtzee = () => {
                     <div className="bg-pink-900 border-2 border-pink-500 rounded-lg p-4">
                       <div className="text-pink-400 font-bold text-center mb-4">EWOLUCJA KOSTEK</div>
                       
-                      {/* Collected Dice Display */}
+                      {/* Evolution Tier Display */}
                       <div className="mb-4">
-                        <div className="text-pink-300 font-bold text-center mb-2">ZEBRANE KOSTKI</div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {collectedDice.map((count, index) => (
-                            <div key={index} className="bg-gray-800 border-2 border-pink-400 rounded-lg p-2 text-center">
-                              <div className="text-lg">🎲</div>
-                              <div className="text-xs text-pink-300">{index + 1}</div>
-                              <div className="text-xs text-pink-400 font-bold">{count}</div>
+                        <div className="text-pink-300 font-bold text-center mb-2">TIER EWOLUCJI</div>
+                        <div className="grid grid-cols-5 gap-2">
+                          {[0,1,2,3,4,5,6,7,8,9,10].map(tier => {
+                            const tierNames = ['Kamień', 'Miedź', 'Srebro', 'Złoto', 'Platyna', 'Diament', 'Rubin', 'Szmaragd', 'Szafir', 'Obsydian', 'Void'];
+                            const tierColors = ['gray', 'orange', 'gray', 'yellow', 'cyan', 'blue', 'red', 'green', 'blue', 'purple', 'black'];
+                            const isActive = evolutionTier >= tier;
+                            
+                            return (
+                              <div key={tier} className={`p-2 rounded border-2 text-center ${
+                                isActive
+                                  ? 'bg-pink-500 border-pink-300 text-white' 
+                                  : 'bg-gray-700 border-gray-500 text-gray-400'
+                              }`}>
+                                <div className="text-lg">💎</div>
+                                <div className="text-xs">{tierNames[tier]}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Evolution Bonuses */}
+                      <div className="mb-4">
+                        <div className="text-pink-300 font-bold text-center mb-2">BONUSY EWOLUCJI</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Object.entries(evolutionBonuses).map(([bonus, value]) => (
+                            <div key={bonus} className="bg-gray-800 border-2 border-pink-400 rounded-lg p-2 text-center">
+                              <div className="text-xs text-pink-300">{bonus.toUpperCase()}</div>
+                              <div className="text-lg text-pink-400 font-bold">{value}</div>
                             </div>
                           ))}
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[0,1,2,3,4,5,6,7].map(level => (
-                          <div key={level} className={`p-2 rounded border-2 text-center ${
-                            diceBuild.level >= level 
-                              ? 'bg-pink-500 border-pink-300 text-white' 
-                              : 'bg-gray-700 border-gray-500 text-gray-400'
-                          }`}>
-                            <div className="text-lg">🎲</div>
-                            <div className="text-xs">Lv.{level}</div>
-                          </div>
-                        ))}
-                      </div>
 
-                      {/* Merge Button */}
-                      <div className="mt-4 text-center">
+                      {/* Evolution Button */}
+                      <div className="text-center">
                         <button
-                          onClick={() => {
-                            // Simple merge logic: need 3 of same dice to upgrade
-                            const canUpgrade = collectedDice.some(count => count >= 3);
-                            if (canUpgrade && diceBuild.level < 7) {
-                              const newCollected = [...collectedDice];
-                              const diceIndex = newCollected.findIndex(count => count >= 3);
-                              newCollected[diceIndex] -= 3;
-                              setCollectedDice(newCollected);
-                              setDiceBuild(prev => ({...prev, level: prev.level + 1}));
-                            }
-                          }}
-                          disabled={!collectedDice.some(count => count >= 3) || diceBuild.level >= 7}
+                          onClick={evolveDice}
+                          disabled={gold < [100, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000][evolutionTier] || evolutionTier >= 10}
                           className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                            collectedDice.some(count => count >= 3) && diceBuild.level < 7
+                            gold >= [100, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000][evolutionTier] && evolutionTier < 10
                               ? 'bg-pink-500 border-pink-300 text-white hover:bg-pink-600'
                               : 'bg-gray-700 border-gray-500 text-gray-400 cursor-not-allowed'
                           }`}
                         >
-                          MERGE (3x kostka → +1 poziom)
+                          EWOLUCJA ({[100, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000][evolutionTier]}💰)
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
               )}
-
             </div>
-          </>
-        )}
       </div>
     </div>
   );

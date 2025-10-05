@@ -2,8 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  base: '/dungeon-yahtzee/',
+export default defineConfig(({ command }) => {
+  const base = command === 'serve' ? '/' : '/dungeon-yahtzee/';
+  
+  return {
+    plugins: [react()],
+    base: base,
+  }
 })
 
